@@ -82,9 +82,9 @@ class Heap:
             self._swap(i, smallest)
             self._min_heapify(smallest)
 
-    def _build_min_heap(self) -> None:
+    """def _build_min_heap(self) -> None:
         for i in range(self._heap_size // 2, -1, -1):
-            self._min_heapify(i)
+            self._min_heapify(i)"""
 
     def _extract_min(self) -> Node:
         if self._heap_size < 1:

@@ -40,13 +40,18 @@ class Polyphasic:
 
         while True:
             # Pegar elementos de cada lista, apontados por cada índice em `iters`.
-            current_elements: List[int] = [LL[i][iters[i]] for i in range(len(LL))]
+            current_elements: List[int] = [LL[i][iters[i]] for i in range(len(LL))] # Lista com todos os elementos sendo avaliados
+            current_elements = [current_elements[i] if iters[i] >= 0 else inf for i in range(len(LL))] # Substituir elementos com índice < 0 por `inf`
             smallest_elem_idx: int = argmin(current_elements)
+            smallest_elem = current_elements[smallest_elem_idx]
+            if smallest_elem == inf: break
+
             out.append(current_elements[smallest_elem_idx])
             # Incrementar índice da lista correspondente
             iters[smallest_elem_idx] += 1
             if iters[smallest_elem_idx] >= len(LL[smallest_elem_idx]):
-                break
+                iters[smallest_elem_idx] = -1
+
         return out
 
     @staticmethod

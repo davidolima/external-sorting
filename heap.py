@@ -44,13 +44,12 @@ class Node:
 
 
 class Heap:
-    def __init__(self, main_memory_size: int, registers: List[int], num_sorted_sequences: int) -> None:
+    def __init__(self, main_memory_size: int, registers: List[int]) -> None:
         self._main_memory_size: int = main_memory_size
         self._registers: List[int] = registers
-        self._num_sorted_sequences: int = num_sorted_sequences
         self._last_min_node: Union[None, Node] = None
         self._heap_size: int = 0
-        self._sorted_sequences: List[List[int]] = [[] for _ in range(num_sorted_sequences)]
+        self._sorted_sequences: List[List[int]] = [[]]
         self._i_sorted_sequence: int = 0
         self._heap: List[Node] = []
         self._fill_heap()
@@ -127,8 +126,8 @@ class Heap:
         if all([node.is_marked for node in self._heap]):
             self._unmark_nodes()
             self._i_sorted_sequence += 1
-            if self._i_sorted_sequence >= self._num_sorted_sequences:
-                raise ValueError("Sorted sequences overflow")
+            if self._i_sorted_sequence > len(self._sorted_sequences) - 1:
+                self._sorted_sequences.append([])
 
     def _unmark_nodes(self) -> None:
         for node in self._heap:
@@ -148,6 +147,6 @@ if __name__ == "__main__":
     registers: List[int] = [18, 7, 3, 24, 15, 5, 20, 25, 16, 14, 21, 19, 1, 4, 13, 9, 22, 11, 23, 8, 17, 6, 12, 2, 10]
     main_memory_size: int = 3
     num_sorted_sequences: int = 5
-    heap = Heap(main_memory_size, registers, num_sorted_sequences)
+    heap = Heap(main_memory_size, registers)
     sorted_sequences = heap.sort()
     print(sorted_sequences)

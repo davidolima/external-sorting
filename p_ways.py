@@ -43,6 +43,42 @@ class PWays:
             print()
             i += 1"""
 
+    def sort(self) -> List[int]:
+        counter: int = 1
+        accumulator_index_input_files: Set[int] = set()
+
+        while len(self._index_input_files) > 1:
+            while len(self._index_input_files) > 0:
+                sequences_to_merge: List[List[int]] = []
+
+                # get the first sequence of each input file
+                for index in self._index_input_files:
+                    file = self._files[index]
+                    if file:
+                        sequence: List[int] = file.pop(0)
+                        sequences_to_merge.append(sequence)
+
+                        if not file:
+                            self._index_input_files.remove(index)
+
+                # merge the sequences
+                merged_sequence: List[int] = PWays.merge_p_lists(sequences_to_merge)
+
+                # get the index of the output file that will receive the merged sequence
+                r_file_index: int = (max(self._index_output_files) + (counter % self._num_output_files)) % self._num_output_files
+
+                counter += 1
+
+                accumulator_index_input_files.add(r_file_index)
+
+                # add the merged sequence to the output file
+                self._files[r_file_index].append(merged_sequence)
+
+            self._index_input_files = accumulator_index_input_files
+
+        return self._files[list(self._index_input_files)[0]][0]
+
+
     @staticmethod
     def merge_p_lists(lists_to_merge: List[List[int]]) -> List[int]:
         if not lists_to_merge:

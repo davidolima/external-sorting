@@ -107,9 +107,9 @@ class Heap:
             node.mark()
 
         self._registers.pop(0)
-
         self._heap.append(node)
-        i = self._heap_size - 1
+
+        i: int = self._heap_size - 1
         while i > 0 and self._heap[self._parent(i)] > self._heap[i]:
             self._swap(i, self._parent(i))
             i = self._parent(i)
@@ -126,6 +126,7 @@ class Heap:
         if all([node.is_marked for node in self._heap]):
             self._unmark_nodes()
             self._i_sorted_sequence += 1
+
             if self._i_sorted_sequence > len(self._sorted_sequences) - 1:
                 self._sorted_sequences.append([])
 
@@ -138,15 +139,16 @@ class Heap:
             self._check_marked_nodes()
             min_node = self._extract_min()
             self._sorted_sequences[self._i_sorted_sequence].append(min_node.value)
+
             if len(self._registers) > 0:
                 self._insert(Node(self._registers[0]))
+
         return self._sorted_sequences
 
 
 if __name__ == "__main__":
     registers: List[int] = [18, 7, 3, 24, 15, 5, 20, 25, 16, 14, 21, 19, 1, 4, 13, 9, 22, 11, 23, 8, 17, 6, 12, 2, 10]
     main_memory_size: int = 3
-    num_sorted_sequences: int = 5
     heap = Heap(main_memory_size, registers)
     sorted_sequences = heap.sort()
     print(sorted_sequences)

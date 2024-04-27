@@ -18,12 +18,11 @@ class PWays:
         self._index_input_files: Set[int] = set()
 
         self._num_output_files: int = math.ceil(max_open_files / 2)
-        self._index_output_files: Set[int] = set()
 
         self._get_sorted_sequences()
 
     def _get_sorted_sequences(self) -> None:
-        heap = Heap(self._main_memory_size, self._registers, self._num_sorted_sequences)
+        heap = Heap(self._main_memory_size, self._registers)
         sorted_sequences = heap.sort()
         """print(sorted_sequences)
         print()"""
@@ -43,16 +42,41 @@ class PWays:
             print()
             i += 1"""
 
-    def sort(self) -> List[int]:
-        counter: int = 1
-        accumulator_index_input_files: Set[int] = set()
+    def _f_print(self, phase: int) -> None:
+        print(f"fase {phase} 0.0")
+        for index, file in enumerate(self._files):
+            if file:
+                print(f"{index + 1}:", end=" ")
+                for sequence in file:
+                    print("{", end=" ")
+                    for register in sequence:
+                        print(register, end=" ")
+                    print("}", end=" ")
+                print()
 
-        while len(self._index_input_files) > 1:
-            while len(self._index_input_files) > 0:
+    def sort(self):
+
+        while True:
+            phase: int = 0
+            self._f_print(phase)
+            phase += 1
+
+            if len(self._index_input_files) <= 1 and len(self._files[list(self._index_input_files)[0]]) <= 1:
+                break
+
+            # max input index before starte the current phase
+            max_input_index: int = max(self._index_input_files)
+
+            counter: int = 0
+
+            # accumulator of index input files for the next phase
+            accumulator_index_input_files: Set[int] = set()
+
+            while len(self._index_input_files) != 0:
                 sequences_to_merge: List[List[int]] = []
 
                 # get the first sequence of each input file
-                for index in self._index_input_files:
+                for index in list(self._index_input_files):
                     file = self._files[index]
                     if file:
                         sequence: List[int] = file.pop(0)
@@ -65,19 +89,20 @@ class PWays:
                 merged_sequence: List[int] = PWays.merge_p_lists(sequences_to_merge)
 
                 # get the index of the output file that will receive the merged sequence
-                r_file_index: int = (max(self._index_output_files) + (counter % self._num_output_files)) % self._num_output_files
-
+                mod_value = self._max_open_files - self._num_input_files
+                r_file_index = (max_input_index + ((counter % mod_value) + 1)) % self._max_open_files
                 counter += 1
 
-                accumulator_index_input_files.add(r_file_index)
-
-                # add the merged sequence to the output file
+                # append the merged sequence to the output file
                 self._files[r_file_index].append(merged_sequence)
 
+                # add the index of the output file to the accumulator
+                accumulator_index_input_files.add(r_file_index)
+
+            # update the index input files and the number of input files
             self._index_input_files = accumulator_index_input_files
-
-        return self._files[list(self._index_input_files)[0]][0]
-
+            self._num_input_files = len(self._index_input_files)
+            self._num_output_files = self._max_open_files - self._num_input_files
 
     @staticmethod
     def merge_p_lists(lists_to_merge: List[List[int]]) -> List[int]:
@@ -112,12 +137,9 @@ class PWays:
 
 
 if __name__ == "__main__":
-    """registers = [18, 7, 3, 24, 15, 5, 20, 25, 16, 14, 21, 19, 1, 4, 13, 9, 22, 11, 23, 8, 17, 6, 12, 2, 10]
+    registers = [18, 7, 3, 24, 15, 5, 20, 25, 16, 14, 21, 19, 1, 4, 13, 9, 22, 11, 23, 8, 17, 6, 12, 2, 10]
     main_memory_size = 2
     max_open_files = 4
     num_sorted_sequences = 7
-    p_caminhos = PCaminhos(main_memory_size, registers, num_sorted_sequences, max_open_files)
-    p_caminhos.get_sorted_sequences()"""
-    lists = [[1, 12, 3], [4, 5, 18], [7, 8, 9]]
-    resultado = PWays.merge_p_lists(lists_to_merge=lists)
-    print(resultado)
+    p_caminhos = PWays(main_memory_size, registers, num_sorted_sequences, max_open_files)
+    p_caminhos.sort()

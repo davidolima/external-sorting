@@ -55,6 +55,47 @@ class Polyphasic:
         return out
 
     @staticmethod
+    def indice_lista_vazia(lista):
+        for i, sublist in enumerate(lista):
+            if len(sublist) == 0:
+                return i
+        return -1
+
+    @staticmethod
+    def intercalacao_polifasica(seqs):
+        result = []
+        output_tape = []
+        fase = 0
+
+        print(f"Fase {fase}. Estado das fitas:")
+        for i, tape in enumerate(seqs):
+            print(f"Fita {i + 1}: {tape}")
+        fase += 1
+
+        while len(seqs) > 1:
+            current = []
+            for c in range(len(seqs)):
+                if len(seqs[c]) > 0:
+                    current.append((seqs[c][0], c))
+            if not current:
+                break
+
+            number, index = min(current)
+            result.append(number)
+            seqs[index].pop(0)
+
+            empty_list_index = Polyphasic.indice_lista_vazia(seqs)
+            if empty_list_index != -1:
+                output_tape = seqs.pop(empty_list_index)
+                print(f"Fase {fase}. Estado das fitas:")
+                fase += 1
+                for i, tape in enumerate(seqs):
+                    print(f"Fita {i + 1}: {tape}")
+
+        result.extend(output_tape)
+        return result
+
+    @staticmethod
     def merge_2_lists(A: List[int], B: List[int], C: List[int]) -> List[int]:
         """
         A, B: Listas que serão mescladas.
@@ -90,12 +131,17 @@ class Polyphasic:
 
 if __name__ == "__main__":
     import random
+    #Por enquanto, o algoritmo apaga as listas vazias a fim de evitar um loop infinito
+    #Estou resolvendo isso, mas ele já retorna os valores ordenados
+    #Além disso também estou com problema pra identificar o fim da fase nesse algoritmo
+    #TODO: resolver os problemas citados acima
+
     init_seqs = [
             [random.randint(1, 100) for i in range(12)],
             [random.randint(1, 100) for i in range(8)],
-            [],
             [random.randint(1, 100) for i in range(14)],
             [random.randint(1, 100) for i in range(15)],
+            [],
     ]
 
     [x.sort() for x in init_seqs]
@@ -105,8 +151,8 @@ if __name__ == "__main__":
     #print(seq_to_notation(init_seqs))
 
 
-    print("Sorted:")
-    sorted = Polyphasic.merge_n_lists(init_seqs[0:2] + init_seqs[3:])
+    sorted = Polyphasic.intercalacao_polifasica(init_seqs)
+    print(f"Sorted: {sorted}")
     # sorted = Polyphasic(
     #     registers = init_seqs,
     #     initial_seq_size = 1,
@@ -114,4 +160,3 @@ if __name__ == "__main__":
     #     max_open_files = 5,
     # )
     #print(seq_to_notation(sorted))
-    print(sorted)

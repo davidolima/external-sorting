@@ -1,5 +1,6 @@
 from typing import List, Set
 from heap import Heap
+from utils import beta
 import math
 
 
@@ -42,8 +43,8 @@ class PWays:
             print()
             i += 1"""
 
-    def _f_print(self, phase: int) -> None:
-        print(f"fase {phase} 0.0")
+    def _f_print(self, phase: int, beta_value: float) -> None:
+        print(f"fase {phase} {beta_value:.2f}")
         for index, file in enumerate(self._files):
             if file:
                 print(f"{index + 1}:", end=" ")
@@ -55,10 +56,21 @@ class PWays:
                 print()
 
     def sort(self):
-
+        phase: int = 0
         while True:
-            phase: int = 0
-            self._f_print(phase)
+            if phase == 0:
+                beta_value = beta(self._main_memory_size, self._num_sorted_sequences, [self._registers])
+            else:
+                num_sequences: int = 0
+                generated_sequences: int = 0
+                for index in self._index_input_files:
+                    for file in self._files[index]:
+                        num_sequences += len(file)
+                        for sequence in file:
+                            generated_sequences += len(sequence)
+
+                beta_value = beta(self._main_memory_size, num_sequences, generated_sequences)
+            self._f_print(phase, beta_value)
             phase += 1
 
             if len(self._index_input_files) <= 1 and len(self._files[list(self._index_input_files)[0]]) <= 1:

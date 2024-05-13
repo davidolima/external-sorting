@@ -72,7 +72,7 @@ class Polyphasic:
 
             print(f"fase {j} {beta:.2f}")
             for p in range(len(seqs)):
-                print(f'{p + 1}:',*seqs[p])
+                print(f'{p + 1}: {{',*seqs[p], '}')
 
             seqs = [sorted(seq) for seq in seqs]
             seqs = [seqs[i] + seqs[i + 1] if i + 1 < len(seqs) else seqs[i] for i in range(0, len(seqs), 2)]

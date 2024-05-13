@@ -55,45 +55,31 @@ class Polyphasic:
         return out
 
     @staticmethod
-    def indice_lista_vazia(lista):
-        for i, sublist in enumerate(lista):
-            if len(sublist) == 0:
-                return i
-        return -1
+    def intercalar_sequencias(sequencias):
+        resultado = []
+        while any(sequencias):
+            for seq in sequencias:
+                if seq:
+                    resultado.append(seq.pop(0))
+        return resultado
 
     @staticmethod
-    def intercalacao_polifasica(seqs):
-        result = []
-        output_tape = []
-        fase = 0
+    def intercalacao_polifasica(seqs, r, m):
+        betas = []
+        for j in range(r):
+            beta = sum(len(seq) for seq in seqs) / (m * len(seqs))
+            betas.append(beta)
 
-        print(f"Fase {fase}. Estado das fitas:")
-        for i, tape in enumerate(seqs):
-            print(f"Fita {i + 1}: {tape}")
-        fase += 1
+            print(f"fase {j} {beta:.2f}")
+            for p in range(len(seqs)):
+                print(f'{p + 1}:',*seqs[p])
 
-        while len(seqs) > 1:
-            current = []
-            for c in range(len(seqs)):
-                if len(seqs[c]) > 0:
-                    current.append((seqs[c][0], c))
-            if not current:
-                break
+            seqs = [sorted(seq) for seq in seqs]
+            seqs = [seqs[i] + seqs[i + 1] if i + 1 < len(seqs) else seqs[i] for i in range(0, len(seqs), 2)]
 
-            number, index = min(current)
-            result.append(number)
-            seqs[index].pop(0)
-
-            empty_list_index = Polyphasic.indice_lista_vazia(seqs)
-            if empty_list_index != -1:
-                output_tape = seqs.pop(empty_list_index)
-                print(f"Fase {fase}. Estado das fitas:")
-                fase += 1
-                for i, tape in enumerate(seqs):
-                    print(f"Fita {i + 1}: {tape}")
-
-        result.extend(output_tape)
-        return result
+        alpha = sum(len(seq) for seq in seqs) / sum(len(s) for s in seqs)
+        print(f"final {alpha:.2f}")
+        return seqs
 
     @staticmethod
     def merge_2_lists(A: List[int], B: List[int], C: List[int]) -> List[int]:
@@ -136,12 +122,19 @@ if __name__ == "__main__":
     #Além disso também estou com problema pra identificar o fim da fase nesse algoritmo
     #TODO: resolver os problemas citados acima
 
+    # init_seqs = [
+    #         [random.randint(1, 100) for i in range(12)],
+    #         [random.randint(1, 100) for i in range(8)],
+    #         [random.randint(1, 100) for i in range(14)],
+    #         [random.randint(1, 100) for i in range(15)],
+    #         [],
+    # ]
+
     init_seqs = [
-            [random.randint(1, 100) for i in range(12)],
-            [random.randint(1, 100) for i in range(8)],
-            [random.randint(1, 100) for i in range(14)],
-            [random.randint(1, 100) for i in range(15)],
-            [],
+        [1,5,6,7,8],
+        [1,3,4,7],
+        [2,3,4,9,10],
+        []
     ]
 
     [x.sort() for x in init_seqs]
@@ -151,8 +144,10 @@ if __name__ == "__main__":
     #print(seq_to_notation(init_seqs))
 
 
-    sorted = Polyphasic.intercalacao_polifasica(init_seqs)
-    print(f"Sorted: {sorted}")
+    r=3
+    m=3
+    sorted = Polyphasic.intercalacao_polifasica(init_seqs, r, m)
+    print(f"Sorted:", *sorted[0])
     # sorted = Polyphasic(
     #     registers = init_seqs,
     #     initial_seq_size = 1,

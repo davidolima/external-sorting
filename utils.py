@@ -11,7 +11,7 @@ def seq_to_notation(seqs: List[List[List[int]]]):
             line += "(-,-) "
     return line
 
-def beta(main_memory_size: int, num_sequences_actual_phase:int, generated_sequences_at_actual_phase: Union(List[List[int]], List[List[List[int]]], int)):
+def beta(main_memory_size: int, num_sequences_actual_phase:int, generated_sequences_at_actual_phase: Union[List[List[int]], List[List[List[int]]], int]):
     """the generated_sequences_at_actual_phase is a list of files a list of sequences of the actual number of
     registers generated in the actual phase"""
 

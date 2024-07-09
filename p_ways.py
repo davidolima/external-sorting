@@ -22,6 +22,7 @@ class PWays:
 
         self._get_sorted_sequences()
 
+
     def _get_sorted_sequences(self) -> None:
         heap = Heap(self._main_memory_size, self._registers)
         sorted_sequences = heap.sort()
@@ -59,24 +60,25 @@ class PWays:
         phase: int = 0
         while True:
             if phase == 0:
-                beta_value = beta(self._main_memory_size, self._num_sorted_sequences, [self._registers])
+                registers_size: int = len(self._registers)
+                beta_value:float = beta(self._main_memory_size, self._num_sorted_sequences, registers_size, depth=0)
             else:
                 num_sequences: int = 0
-                generated_sequences: int = 0
+                sum_size_of_generated_sequences: int = 0
                 for index in self._index_input_files:
-                    for file in self._files[index]:
-                        num_sequences += len(file)
-                        for sequence in file:
-                            generated_sequences += len(sequence)
+                    num_sequences = len(self._files[index])
+                    for sequence in self._files[index]:
+                        # adding the size of all the genererated sequences
+                        sum_size_of_generated_sequences += len(sequence)
 
-                beta_value = beta(self._main_memory_size, num_sequences, generated_sequences)
+                beta_value:float = beta(self._main_memory_size, num_sequences, sum_size_of_generated_sequences, depth=0)
             self._f_print(phase, beta_value)
             phase += 1
 
             if len(self._index_input_files) <= 1 and len(self._files[list(self._index_input_files)[0]]) <= 1:
                 break
 
-            # max input index before starte the current phase
+            # max input index before start the current phase
             max_input_index: int = max(self._index_input_files)
 
             counter: int = 0
@@ -101,8 +103,8 @@ class PWays:
                 merged_sequence: List[int] = PWays.merge_p_lists(sequences_to_merge)
 
                 # get the index of the output file that will receive the merged sequence
-                mod_value = self._max_open_files - self._num_input_files
-                r_file_index = (max_input_index + ((counter % mod_value) + 1)) % self._max_open_files
+                mod_value: int = self._max_open_files - self._num_input_files
+                r_file_index: int = (max_input_index + ((counter % mod_value) + 1)) % self._max_open_files
                 counter += 1
 
                 # append the merged sequence to the output file
@@ -153,5 +155,5 @@ if __name__ == "__main__":
     main_memory_size = 2
     max_open_files = 4
     num_sorted_sequences = 7
-    p_caminhos = PWays(main_memory_size, registers, num_sorted_sequences, max_open_files)
-    p_caminhos.sort()
+    p_ways = PWays(main_memory_size, registers, num_sorted_sequences, max_open_files)
+    p_ways.sort()

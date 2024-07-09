@@ -11,23 +11,30 @@ def seq_to_notation(seqs: List[List[List[int]]]):
             line += "(-,-) "
     return line
 
-def beta(main_memory_size: int, num_sequences_actual_phase:int, generated_sequences_at_actual_phase: Union[List[List[int]], List[List[List[int]]], int]):
-    """the generated_sequences_at_actual_phase is a list of files a list of sequences of the actual number of
-    registers generated in the actual phase"""
+def beta(main_memory_size: int, num_sequences_actual_phase:int, 
+         generated_sequences_at_actual_phase: Union[List[List[int]], 
+         List[List[List[int]]], int], depth: int = 0) -> float:
+    """
+        the generated_sequences_at_actual_phase could be a list of files (depth = 2) 
+        a list of sequences (depth = 1) of the actual number of
+        registers generated in the actual phase (depth = 0)
+    """
 
-    sum_size_of_generated_sequences = 0
-    if type(generated_sequences_at_actual_phase) is int:
+    sum_size_of_generated_sequences:int = 0
+    if depth == 0 and type(generated_sequences_at_actual_phase) == int:
         sum_size_of_generated_sequences = generated_sequences_at_actual_phase
 
-    elif type(generated_sequences_at_actual_phase) is List[List[int]]:
+    elif depth == 2 and type(generated_sequences_at_actual_phase) == list:
         for seq in generated_sequences_at_actual_phase:
             sum_size_of_generated_sequences += len(seq)
 
-    elif type(generated_sequences_at_actual_phase) is List[List[List[int]]]:
+    elif depth == 3 and type(generated_sequences_at_actual_phase) == list:
         for file in generated_sequences_at_actual_phase:
             for seq in file:
                 sum_size_of_generated_sequences += len(seq)
-
+    else:
+        raise ValueError("Depth must be 0, 1 or 2")
+    
     return (1/(main_memory_size + num_sequences_actual_phase)) * sum_size_of_generated_sequences
 
 def argmin(arr: List[int]) -> int:

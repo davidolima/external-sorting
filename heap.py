@@ -46,7 +46,7 @@ class Node:
 class Heap:
     def __init__(self, main_memory_size: int, registers: List[int]) -> None:
         self._main_memory_size: int = main_memory_size
-        self._registers: List[int] = registers
+        self._registers: List[int] = registers.copy()
         self._last_min_node: Union[None, Node] = None
         self._heap_size: int = 0
         self._sorted_sequences: List[List[int]] = [[]]
@@ -147,6 +147,7 @@ class Heap:
 
 
 if __name__ == "__main__":
+    # test
     registers: List[int] = [18, 7, 3, 24, 15, 5, 20, 25, 16, 14, 21, 19, 1, 4, 13, 9, 22, 11, 23, 8, 17, 6, 12, 2, 10]
     main_memory_size: int = 3
     heap = Heap(main_memory_size, registers)

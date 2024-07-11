@@ -25,9 +25,7 @@ class PWays:
 
     def _get_sorted_sequences(self) -> None:
         heap = Heap(self._main_memory_size, self._registers)
-        sorted_sequences = heap.sort()
-        """print(sorted_sequences)
-        print()"""
+        sorted_sequences = [[1, 5, 6, 7 , 8], [2, 3, 4, 9, 10], [1, 3, 4, 7]]
 
         for i in range(self._num_sorted_sequences):
             file_index: int = i % self._num_input_files
@@ -151,9 +149,9 @@ class PWays:
 
 
 if __name__ == "__main__":
-    registers = [18, 7, 3, 24, 15, 5, 20, 25, 16, 14, 21, 19, 1, 4, 13, 9, 22, 11, 23, 8, 17, 6, 12, 2, 10]
-    main_memory_size = 2
+    registers = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14]
+    main_memory_size = 3
     max_open_files = 4
-    num_sorted_sequences = 7
+    num_sorted_sequences = 3
     p_ways = PWays(main_memory_size, registers, num_sorted_sequences, max_open_files)
     p_ways.sort()

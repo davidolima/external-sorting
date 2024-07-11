@@ -19,7 +19,7 @@ def beta(main_memory_size: int, num_sequences_actual_phase:int,
         a list of sequences (depth = 1) of the actual number of
         registers generated in the actual phase (depth = 0)
     """
-    
+
     sum_size_of_generated_sequences:int = 0
     if depth == 0 and type(generated_sequences_at_actual_phase) == int:
         sum_size_of_generated_sequences = generated_sequences_at_actual_phase
@@ -35,7 +35,6 @@ def beta(main_memory_size: int, num_sequences_actual_phase:int,
     else:
         raise ValueError("Depth parameter value is wrong or the type of the generated_sequences_at_actual_phase is not correct.")
     
-
     return (1/(main_memory_size * num_sequences_actual_phase)) * sum_size_of_generated_sequences
 
 def argmin(arr: List[int]) -> int:

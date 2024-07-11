@@ -1,4 +1,4 @@
-from typing import List, Set
+from typing import List, Set, Union
 from heap import Heap
 from utils import beta
 import math
@@ -42,7 +42,7 @@ class PWays:
             print()
             i += 1"""
 
-    def _f_print(self, phase: int, beta_value: float) -> None:
+    def _f_print(self, phase: int, beta_value: float, final:bool = False, alpha: Union[None, float] = None) -> None:
         print(f"fase {phase} {beta_value:.2f}")
         for index, file in enumerate(self._files):
             if file:
@@ -53,22 +53,28 @@ class PWays:
                         print(register, end=" ")
                     print("}", end=" ")
                 print()
+        if final:
+            print(f"final: {alpha:.2f}")
 
     def sort(self):
         phase: int = 0
+        total_write_operations: int = 0
         while True:
             if phase == 0:
                 registers_size: int = len(self._registers)
+                # should it be commented?
+                #total_write_operations += registers_size
                 beta_value:float = beta(self._main_memory_size, self._num_sorted_sequences, registers_size, depth=0)
             else:
                 num_sequences: int = 0
                 sum_size_of_generated_sequences: int = 0
                 for index in self._index_input_files:
-                    num_sequences = len(self._files[index])
+                    num_sequences += len(self._files[index])
                     for sequence in self._files[index]:
                         # adding the size of all the genererated sequences
                         sum_size_of_generated_sequences += len(sequence)
 
+                total_write_operations += sum_size_of_generated_sequences
                 beta_value:float = beta(self._main_memory_size, num_sequences, sum_size_of_generated_sequences, depth=0)
             self._f_print(phase, beta_value)
             phase += 1
@@ -115,6 +121,9 @@ class PWays:
             self._index_input_files = accumulator_index_input_files
             self._num_input_files = len(self._index_input_files)
             self._num_output_files = self._max_open_files - self._num_input_files
+        
+        #Wrong?!
+        print(f"final: {(total_write_operations / len(self._registers)):.2f}")
 
     @staticmethod
     def merge_p_lists(lists_to_merge: List[List[int]]) -> List[int]:

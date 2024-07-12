@@ -2,12 +2,13 @@ from typing import List, Set, Union
 from heap import Heap
 from utils import beta
 import math
-
+import os
 
 class PWays:
 
     def __init__(self, main_memory_size: int, registers: List[int],
-                 num_sorted_sequences: int, max_open_files: int) -> None:
+                 num_sorted_sequences: int, max_open_files: int,
+                 save_results: bool = False) -> None:
 
         self._main_memory_size: int = main_memory_size
         self._registers: List[int] = registers
@@ -20,7 +21,10 @@ class PWays:
 
         self._num_output_files: int = math.ceil(max_open_files / 2)
 
-        self._get_sorted_sequences()
+        self._r = self._get_sorted_sequences()
+
+        self._result_path = "results"
+        self._save: bool = save_results
 
 
     def _get_sorted_sequences(self) -> None:
@@ -32,6 +36,8 @@ class PWays:
             self._files[file_index].append(sorted_sequences[i])
             self._index_input_files.add(file_index)
 
+        return len(sorted_sequences)
+    
         """i = 0
         for file in self._files:
             print(f"FILE {i}: ")
@@ -76,6 +82,7 @@ class PWays:
 
                 total_write_operations += sum_size_of_generated_sequences
                 beta_value:float = beta(self._main_memory_size, num_sequences, sum_size_of_generated_sequences, depth=0)
+            
             self._f_print(phase, beta_value)
             phase += 1
 
@@ -123,7 +130,20 @@ class PWays:
             self._num_output_files = self._max_open_files - self._num_input_files
         
         #Wrong?!
-        print(f"final: {(total_write_operations / len(self._registers)):.2f}")
+        alpha: float = total_write_operations / len(self._registers)
+        print(f"final: {alpha:.2f}")
+
+        # save the results
+        if self._save:
+            self._save_results(alpha)
+    
+    def _save_results(self, alpha: float) -> None:
+        if not os.path.exists(self._result_path):
+            os.makedirs(self._result_path)
+
+        path: str = os.path.join(self._result_path, f"data_p_ways.txt")
+        with open(path, "a") as f:
+            f.write(f"{self._r} {alpha}\n")
 
     @staticmethod
     def merge_p_lists(lists_to_merge: List[List[int]]) -> List[int]:
@@ -162,5 +182,5 @@ if __name__ == "__main__":
     main_memory_size = 3
     max_open_files = 4
     num_sorted_sequences = 3
-    p_ways = PWays(main_memory_size, registers, num_sorted_sequences, max_open_files)
+    p_ways = PWays(main_memory_size, registers, num_sorted_sequences, max_open_files, save_results=True)
     p_ways.sort()

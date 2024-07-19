@@ -1,10 +1,55 @@
 #!/usr/bin/env python3
 
 from math import inf
+from sys import set_int_max_str_digits
 from typing import *
 from polyphasic import Polyphasic
 from heap import Heap
 
+class Run:
+    def __init__(self, seqs, tam_ideal) -> None:
+        self.seqs: list = [x for x in seqs]
+
+        if len(self.seqs) < tam_ideal:
+            dummy = [inf]*(tam_ideal-len(self.seqs))
+            self.seqs.extend(dummy)
+
+    def extend(self, other):
+        if isinstance(other, Run):
+            self.seqs.extend(other.seqs)
+        elif isinstance(other, list):
+            self.seqs.extend(other)
+        raise RuntimeError()
+
+    def is_empty(self):
+        return len(self.seqs) < 1
+
+    def __lt__(self, other):
+        if isinstance(other, Run):
+            return len(self.seqs) < len(other.seqs)
+        else:
+            return len(self.seqs) < other
+
+    def __gt__(self, other):
+        if isinstance(other, Run):
+            return len(self.seqs) > len(other.seqs)
+        else:
+            return len(self.seqs) > other
+
+    def __getitem__(self, idx):
+        return self.seqs[idx]
+
+    def __str__(self) -> str:
+        if len(self.seqs) == 0:
+            return '_'
+        return '{' + str(self.seqs)[1:-1] + '}'
+
+    def __repr__(self):
+        return self.__str__()
+
+    def __len__(self) -> int:
+        return len(self.seqs)
+    
 class Cascade(Polyphasic):
     def __init__(
         self,
@@ -84,18 +129,37 @@ class Cascade(Polyphasic):
             max_open_files=self.max_open_files
         )
 
-        for i in range(len(initial_seqs)):
-            file_idx = i%(self.max_open_files-1) # Distribuir as seq. ord. nos arquivos de input
-            self._files[file_idx].extend(initial_seqs[i])
-            self._files[file_idx] = sorted(self._files[file_idx])
-            if len(self._files[file_idx]) < ideal_sizes[file_idx]:
-                diff = [-1]*(ideal_sizes[file_idx]-len(self._files))
-                self._files[file_idx].extend(diff)
+        initial_seqs.append([])
+        print("initial_seqs:", initial_seqs)
+        print("ideal_sizes:", ideal_sizes)
+        for i in range(self.max_open_files):
+            len_of_seqs = []
+            for s in initial_seqs:
+                if s == []:
+                    len_of_seqs.append(0)
+                elif s == -1:
+                    len_of_seqs.append(inf)
+                else:
+                    len_of_seqs.append(len(s))
+            smallest_seq_idx = len_of_seqs.index(min(len_of_seqs))
+            smallest_ideal_size_idx = ideal_sizes.index(min(ideal_sizes))
 
-        for i in range(len(self._files)):
-            self._files[i] = [[x] for x in self._files[i]]
+            new_run = Run(seqs=initial_seqs[smallest_seq_idx], tam_ideal=ideal_sizes[smallest_ideal_size_idx])
 
-        self._out_idx = self._files.index([])
+
+            initial_seqs[smallest_seq_idx] = -1
+            ideal_sizes[smallest_ideal_size_idx] = inf
+
+            if new_run.is_empty():
+                self._files[smallest_ideal_size_idx] = []
+                continue
+
+            self._files[smallest_ideal_size_idx].append(new_run)
+
+        # for i in range(len(self._files)):
+        #     self._files[i] = [[x] for x in self._files[i]]
+
+        self._out_idx = self._get_empty_run_idx()
         self._print_fase()
 
     def _get_sorted_sequences_(self) -> None:
@@ -119,13 +183,24 @@ class Cascade(Polyphasic):
         self._out_idx = self._files.index([])
         self._print_fase()
 
-    def _print_fase(self):
+    def _print_fase(self, debug=True):
         """
         Imprime o estado da fase atual na notação pedida.
         """
-        stringify = lambda s: str(s)[1:-1].replace('[','{').replace(']','}').replace(',', '')
+        if debug:
+            stringify = lambda s: str(s)[1:-1].replace('[','{').replace(']','}').replace(',', '')
+        else:
+            stringify = lambda s: str(s).replace(' inf', '')[1:-1].replace('[','{').replace(']','}').replace(',', '')
+
         print(f"fase {self._fase} {self.calculate_avg_seq_size()}")
-        [print(str(i+1)+":", stringify(s)) for i, s in enumerate(self._files)]
+        for i, s in enumerate(self._files):
+            line_str  = str(i+1)
+            if debug:
+                # Qtd. + tam. das seqs.
+                line_str += '(' + str(len(s)) + (')' if len(s) < 1 else (',' + str(len(s[0])) + ')'))
+            line_str += ": " + stringify(s)
+            print(line_str)
+
         self._fase+=1
 
     def calculate_avg_seq_size(self):
@@ -135,7 +210,7 @@ class Cascade(Polyphasic):
     def _get_smallest_seq(self) -> list:
         min = self._files[0]
         for file in self._files:
-            if file and len(min) > len(file):
+            if file and len(min[0]) > len(file[0]):
                 min = file
         return min
 

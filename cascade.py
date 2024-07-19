@@ -32,7 +32,7 @@ class Cascade(Polyphasic):
     def _calculate_ideal_previous_line(line: List[int]) -> List[int]:
         r = [0]*len(line)
         curr_line = line.copy()
-        # Weird way of doing it, but just to move the empty file around
+        # Weird way of doing it, but it moves the empty file around
         valid_idxs = list(range(len(line)))
         valid_idxs.remove(line.index(max(line)))
         for i in valid_idxs:
@@ -41,12 +41,37 @@ class Cascade(Polyphasic):
         return r
     
     @staticmethod
+    def _alternate_ideal_previous_line(line: List[int]) -> List[int]:
+        #print("og:", l)
+        idx_vazio = line.index(0)
+        
+        if line.count(0) > 1:
+            # [_, _, 1, _] => [1, 1, _, 1]
+            return [1 if x == 0 else 0 for x in line]
+            
+        idx_max = line.index(max(line))
+        
+        #print(idx_vazio, idx_max, idx_min)
+
+        if idx_max == len(line)-1:
+            next_line = [sum(line[p:]) for p in range(1, len(line))]
+            return next_line + [0]
+        
+        next_line = [sum(line[:p]) for p in range(1, len(line))]
+        return [0] + next_line
+
+    @staticmethod
     def _get_ideal_initial_seq_sizes(n_seqs: int, max_open_files: int) -> List[int]:
         curr_line = [0] * max_open_files
         curr_line[-1] = 1
         while (sum(curr_line) < n_seqs):
             curr_line = Cascade._calculate_ideal_previous_line(curr_line)
         return curr_line
+
+    def _get_empty_run_idx(self):
+        for i in range(len(self._files)):
+            if len(self._files[i]) == 0:
+                return i
 
     def _get_sorted_sequences(self) -> None:
         initial_seqs = Heap(
@@ -137,7 +162,6 @@ class Cascade(Polyphasic):
             # Lista com o menor (primeiro) elemento de cada sequência.
             # Além disso, substitui todos os índices OOB por `inf`
             current_elements: list[int] = [sequences[i][indices[i]] if indices[i] >= 0 else inf for i in range(len(indices))]
-            print(current_elements, out)
             #print(sequences)
 
             min_element = min(current_elements)
@@ -153,12 +177,13 @@ class Cascade(Polyphasic):
 
     def sort(self) -> List[List[int]]:
         while len(self._get_smallest_seq()) > 0:
-            out_idx = self._files.index([])
+            out_idx = self._get_empty_run_idx()
             to_merge = list(range(self.max_open_files))
             to_merge.pop(out_idx)
             merged = self.merge_files(to_merge)
             self._files[out_idx].append(merged)
             self._print_fase()
+            break
 
         return self._files
 
@@ -168,19 +193,19 @@ if __name__ == "__main__":
 
     # Parse command-line arguments
     parser = argparse.ArgumentParser(prog="Cascade Merge Sort", description="Por David Lima, Israel Pedreira e Márcio do Santos")
-    parser.add_argument("-n", "--n_registers",      default=25)
-    parser.add_argument("-p", "--max_open_files",   default=5)
-    parser.add_argument("--initial_seq_size",       default=1)
+    parser.add_argument("-p", "--max_open_files",   default=6)
+    parser.add_argument("-s", "--initial_seq_size", default=3)
     parser.add_argument("-m", "--main_memory_size", default=3)
     args = parser.parse_args()
 
     # Run algorithm
     cascade = Cascade(
-        registers            = [18, 7, 3, 24, 15, 5, 20, 25, 16, 14, 21, 19, 1, 4, 13, 9, 22, 11, 23, 8, 17, 6, 12, 2, 10], #[random.randint(1, 100) for _ in range(args.n_registers)],
+        registers            = [20,2,5,3,9,6,8,45,26,7,1,28,31,23,99,4,77,29,24,10,11,12,15,21,85,65,32,51,64,71,13,14,16,18,19,17,55,66,42,98,22,25,67,61,41,47,60,48,45,75,59,78,58,57,56], #[random.randint(1, 100) for _ in range(args.n_registers)],
         max_open_files       = args.max_open_files,
         initial_seq_size     = args.initial_seq_size,
         main_memory_size     = args.main_memory_size,
     )
-    cascade.sort()
+    result = cascade.sort()
     print("--- End Result --------------")
+    print(result[-1])
     #cascade._print_fase()

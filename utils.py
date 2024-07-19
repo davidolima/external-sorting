@@ -33,9 +33,9 @@ def beta(main_memory_size: int, num_sequences_actual_phase:int,
             for seq in file:
                 sum_size_of_generated_sequences += len(seq)
     else:
-        raise ValueError("Depth must be 0, 1 or 2")
+        raise ValueError("Depth parameter value is wrong or the type of the generated_sequences_at_actual_phase is not correct.")
     
-    return (1/(main_memory_size + num_sequences_actual_phase)) * sum_size_of_generated_sequences
+    return (1/(main_memory_size * num_sequences_actual_phase)) * sum_size_of_generated_sequences
 
 def argmin(arr: List[int]) -> int:
     min = inf

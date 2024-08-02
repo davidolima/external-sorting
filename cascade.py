@@ -1,11 +1,10 @@
 #!/usr/bin/env python3
 
-from math import inf
 from typing import *
 from polyphasic import Polyphasic
 from heap import Heap
 
-#from run import Run
+debug = True
 
 class Cascade(Polyphasic):
     def __init__(
@@ -29,7 +28,8 @@ class Cascade(Polyphasic):
 
         self._out_idx = -1
 
-        self._get_sorted_sequences()
+        #self._get_sorted_sequences()
+        self._distribute_registers_in_files()
 
 
     @staticmethod
@@ -68,8 +68,10 @@ class Cascade(Polyphasic):
     def _get_ideal_initial_seq_sizes(n_seqs: int, max_open_files: int) -> List[int]:
         curr_line = [0] * max_open_files
         curr_line[-1] = 1
+        if debug: print(curr_line)
         while (sum(curr_line) < n_seqs):
             curr_line = Cascade._alternate_ideal_previous_line(curr_line)
+            if debug: print(curr_line)
         return curr_line
 
     def _get_empty_run_idx(self):
@@ -79,7 +81,28 @@ class Cascade(Polyphasic):
 
         raise RuntimeError("Couldn't find empty run.")
 
-    def _get_sorted_sequences(self) -> None:
+    def _distribute_registers_in_files(self) -> None:
+        tam_inicial_ideal = Cascade._get_ideal_initial_seq_sizes(
+            len(self.registers), 
+            self.max_open_files
+        )
+
+        # Add sequences to files corresponding to ideal sizes.
+        for i in range(self.max_open_files):
+            offset = sum(tam_inicial_ideal[:i])
+            runs = [[x] for x in self.registers]
+            
+            if len(runs) >= offset + tam_inicial_ideal[i]:
+                self._files[i].extend(runs[offset:offset+tam_inicial_ideal[i]])
+            else:
+                register_to_add = runs[offset:len(runs)]
+                self._files[i].extend(register_to_add)
+                
+                # Complete the ideal size with dummy runs.
+                n_dummy_runs = tam_inicial_ideal[i] - len(register_to_add)
+                self._files[i].extend([[float('inf')] for _ in range(n_dummy_runs)])
+
+    def _get_sorted_sequences(self) -> None: # NOTE: old.
         initial_seqs = Heap(
             main_memory_size=self.main_memory_size,
             registers=self.registers.copy(),
@@ -100,29 +123,30 @@ class Cascade(Polyphasic):
                 if s == []:
                     len_of_seqs.append(0)
                 elif s == -1:
-                    len_of_seqs.append(inf)
+                    len_of_seqs.append(float('inf'))
                 else:
                     len_of_seqs.append(len(s))
             smallest_seq_idx = len_of_seqs.index(min(len_of_seqs))
             smallest_ideal_size_idx = ideal_sizes.index(min(ideal_sizes))
 
             new_run = [[x] for x in initial_seqs[smallest_seq_idx]]
+            # Completar com dummies
             if len(new_run) < ideal_sizes[smallest_ideal_size_idx]:
-                dummy = [[inf]]*(ideal_sizes[smallest_ideal_size_idx]-len(new_run))
+                dummy = [[float('inf')]]*(ideal_sizes[smallest_ideal_size_idx]-len(new_run))
                 new_run.extend(dummy)
 
             #new_run = Run(seqs=initial_seqs[smallest_seq_idx], tam_ideal=ideal_sizes[smallest_ideal_size_idx])
 
 
             initial_seqs[smallest_seq_idx] = -1
-            ideal_sizes[smallest_ideal_size_idx] = inf
+            ideal_sizes[smallest_ideal_size_idx] = float('inf')
 
             self._files[smallest_ideal_size_idx].extend(new_run)
 
         self._out_idx = self._get_empty_run_idx()
         self._print_fase()
 
-    def _print_fase(self, debug=True):
+    def _print_fase(self):
         """
         Imprime o estado da fase atual na notação pedida.
         """
@@ -167,94 +191,55 @@ class Cascade(Polyphasic):
         input_files.remove([])
         return input_files
 
-    def merge_files(self, file_idxs: list[int]):
-        sequences = [self._files[i][0] for i in file_idxs]
-        while [] not in sequences:
-            # Primeiro elemento de cada seq
-            curr_elements = [sequences[i][0] for i in range(len(sequences))]
+    def merge_files(self, file_idxs: list[int], copy=False) -> list[int]:
+        if copy:
+            sequences = [self._files[i].copy().pop(0) for i in file_idxs]
+        else:
+            sequences = [self._files[i].pop(0) for i in file_idxs]
+        
+        out = []
 
-            new_run = []
-            min_element_idx = None
-            for i in range(len(curr_elements)):
-                # print("curr_elements:", curr_elements)
-                # print("sequences", sequences)
+        #print("sequences:", sequences)
+        while not any([len(x) == 0 for x in sequences]):
+            current_elements: list[int] = [sequences[i][0] for i in range(len(sequences)) if len(sequences[i]) > 0]
+            if len(current_elements) == 0:
+                break
+            #print("current_elements:", current_elements)
+            min_element     = min(current_elements)
+            min_element_idx = current_elements.index(min_element)
 
-                min_element = min(curr_elements)
-
-                if min_element == inf:
-                    r = []
-                    if i != 0:
-                        assert min_element_idx is not None
-                        # Dummy encontrado como minimo durante o merge.
-                        # Adiciona o restante dos dummys na nova run
-                        # e sai do loop.
-                        idxs = list(range(len(curr_elements)+1))
-                        idxs.remove(min_element_idx)
-                    else:
-                        # Merge composto apenas de dummys. Adiciona
-                        # todos os dummys a nova run e saia do loop.
-                        idxs = list(range(len(curr_elements)+1))
-                        idxs.remove(self._out_idx)
-
-                    for j in idxs:
-                        r += self._files[j][0]
-                        self._files[j].pop(0)
-                    new_run.extend(r)
-                    #print('nr:', new_run, "r:", r)
-                    break
-
-                min_element_idx = curr_elements.index(min_element)
-                self._files[min_element_idx].pop(0)
-
-                new_run.append(curr_elements.pop(min_element_idx))
-                #print(sequences)
-                #self._print_fase()
-                #print(new_run)
-
-            self._files[self._out_idx].append(new_run)
-
-            if [] in self._files:
+            out.append(current_elements[min_element_idx])
+            if min_element == float('inf'):
                 break
 
-            sequences = [self._files[i][0] for i in file_idxs] # Primeiras seqs do arquivo
-        self._print_fase()
-
-    # def merge_files(self, file_idxs: list[int]) -> list[int]:
-    #     sequences: List[Run] = [self._files[i][0] for i in file_idxs]
-    #     out = []
-
-    #     while not any([x.is_empty() for x in sequences]):
-    #         current_elements: list[int] = [sequences[i][0] for i in range(len(sequences))]
-    #         #print(current_elements)
-    #         min_element     = min(current_elements)
-    #         min_element_idx = current_elements.index(min_element)
-
-    #         out.append(current_elements[min_element_idx])
-    #         if min_element == inf:
-    #             break
-
-    #         sequences[min_element_idx].pop(0)#(min_element)
-    #     return out
+            sequences[min_element_idx].pop(0) # min element
+            if len(sequences[min_element_idx]) == 0:
+                sequences.pop(min_element_idx)
+        return out
 
     def sort(self) -> List[List[int]]:
-        while len(self._get_smallest_seq()) > 0:
-            idxs = list(range(self.max_open_files))
-            idxs.pop(self._out_idx)
-
-            print("------------------------------ NOVA FASE ------------------------------")
-            #print('out_idx:', self._out_idx)
+        out_idx = self._files.index([])
+        while True:
+            files_to_be_merged = list(range(self.max_open_files))
+            files_to_be_merged.pop(out_idx)
             for _ in range(self.max_open_files-1):
-                self._files[self._out_idx] = []
-                print(f"[!] Current Merge: {[i+1 for i in idxs]} -> {self._out_idx+1}")
-                self.merge_files(idxs)
+                if debug:
+                    print("-----------------------")
+                    print(f"[!] Current Merge: {[i+1 for i in files_to_be_merged]} -> {out_idx+1}")
+                    self._print_fase()
 
-                self._out_idx = self._get_empty_run_idx()
-                print(self._out_idx)
-                idxs.remove(self._out_idx)
+                while not any([len(self._files[idx]) == 0 for idx in files_to_be_merged]):
+                    self._files[out_idx].append(self.merge_files(files_to_be_merged))
 
+                if len(self._files[out_idx][0]) == (len(self.registers) + 1):
+                    self._files[out_idx][0].pop(-1) # Removes dummy run
+                    self._print_fase()
+                    return self._files[out_idx][0]
+                
+                out_idx = self._files.index([])
+                files_to_be_merged.remove(out_idx)
             self._print_fase()
-        return self._files
-
+        
 if __name__ == "__main__":
     import random
     import argparse
@@ -262,29 +247,26 @@ if __name__ == "__main__":
     # Parse command-line arguments
     parser = argparse.ArgumentParser(prog="Cascade Merge Sort", description="Por David Lima, Israel Pedreira e Márcio do Santos")
     parser.add_argument("-p", "--max_open_files",   default=6)
+    parser.add_argument('-n', "--n_registers",      default=50)
     parser.add_argument("-s", "--initial_seq_size", default=3)
     parser.add_argument("-m", "--main_memory_size", default=3)
     args = parser.parse_args()
 
-    exemplo_video = [20,2,5,3,9,6,8,45,26,7,1,28,31,23,99,4,77,29,24,10,11,12,15,21,85,65,32,51,64,71,13,14,16,18,19,17,55,66,42,98,22,25,67,61,41,47,60,48,45,75,59,78,58,57,56]
+    inpt = [random.randint(1, 100) for _ in range(args.n_registers)]
 
-    exemplo_heap = [18, 7, 3, 24, 15, 5, 20, 25, 16, 14, 21, 19, 1, 4, 13, 9, 22, 11, 23, 8, 17, 6, 12, 2, 10]
-
-    exemplo_trabalho = [7, 1, 5, 6, 3, 8, 2, 10, 4, 9, 1, 3, 7, 4, 1, 2, 3]
-
-    #exemplo_aleatorio = [random.randint(1, 100) for _ in range(args.n_registers)],
-
-    print("input:", exemplo_trabalho)
-    print("expected output:", sorted(exemplo_trabalho))
-
+    print("input:", inpt)
+    print("expected output:", sorted(inpt))
+    
     # Run algorithm
     cascade = Cascade(
-        registers            = exemplo_trabalho,
-        max_open_files       = 5, #args.max_open_files,
-        initial_seq_size     = 3, #args.initial_seq_size,
-        main_memory_size     = 3, #args.main_memory_size,
+        registers            = inpt,
+        max_open_files       = args.max_open_files,
+        initial_seq_size     = args.initial_seq_size,
+        main_memory_size     = args.main_memory_size,
     )
-    result = cascade.sort()
+
     print("--- End Result --------------")
+    result = cascade.sort()
+    
+    assert result == sorted(inpt), "The sorting failed."
     print(result[-1])
-    #cascade._print_fase()

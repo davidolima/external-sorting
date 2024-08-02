@@ -29,9 +29,7 @@ class Cascade(Polyphasic):
         self._fase = 0
         self._out_idx = -1
 
-        #self._get_sorted_sequences()
         self._distribute_registers_in_files()
-
 
     @staticmethod
     def _calculate_ideal_previous_line(line: List[int]) -> List[int]:
@@ -47,16 +45,11 @@ class Cascade(Polyphasic):
     
     @staticmethod
     def _alternate_ideal_previous_line(line: List[int]) -> List[int]:
-        #print("og:", l)
-        idx_vazio = line.index(0)
-        
         if line.count(0) > 1:
             # [_, _, 1, _] => [1, 1, _, 1]
             return [1 if x == 0 else 0 for x in line]
             
         idx_max = line.index(max(line))
-        
-        #print(idx_vazio, idx_max, idx_min)
 
         if idx_max == len(line)-1:
             next_line = [sum(line[p:]) for p in range(1, len(line))]
@@ -71,16 +64,9 @@ class Cascade(Polyphasic):
         curr_line[-1] = 1
         if debug: print(curr_line)
         while (sum(curr_line) < n_seqs):
-            curr_line = Cascade._alternate_ideal_previous_line(curr_line)
+            curr_line = Cascade._calculate_ideal_previous_line(curr_line)
             if debug: print(curr_line)
         return curr_line
-
-    def _get_empty_run_idx(self):
-        for i in range(len(self._files)):
-            if len(self._files[i]) == 0:# or self._files[i][0].is_empty():
-                return i
-
-        raise RuntimeError("Couldn't find empty run.")
 
     def _distribute_registers_in_files(self) -> None:
         tam_inicial_ideal = Cascade._get_ideal_initial_seq_sizes(
@@ -102,50 +88,6 @@ class Cascade(Polyphasic):
                 # Complete the ideal size with dummy runs.
                 n_dummy_runs = tam_inicial_ideal[i] - len(register_to_add)
                 self._files[i].extend([[float('inf')] for _ in range(n_dummy_runs)])
-        self._print_fase()
-
-    def _get_sorted_sequences(self) -> None: # NOTE: old.
-        initial_seqs = Heap(
-            main_memory_size=self.main_memory_size,
-            registers=self.registers.copy(),
-        ).sort()
-
-        ideal_sizes: List[int] = Cascade._get_ideal_initial_seq_sizes(
-            n_seqs=len(self.registers),
-            max_open_files=self.max_open_files
-        )
-
-        # initial_seqs = [[x for x in initial_seqs[i]] for i in range(len(initial_seqs))]
-        initial_seqs.append([])
-        #print("initial_seqs:", initial_seqs)
-        #print("ideal_sizes:", ideal_sizes)
-        for i in range(self.max_open_files):
-            len_of_seqs = []
-            for s in initial_seqs:
-                if s == []:
-                    len_of_seqs.append(0)
-                elif s == -1:
-                    len_of_seqs.append(float('inf'))
-                else:
-                    len_of_seqs.append(len(s))
-            smallest_seq_idx = len_of_seqs.index(min(len_of_seqs))
-            smallest_ideal_size_idx = ideal_sizes.index(min(ideal_sizes))
-
-            new_run = [[x] for x in initial_seqs[smallest_seq_idx]]
-            # Completar com dummies
-            if len(new_run) < ideal_sizes[smallest_ideal_size_idx]:
-                dummy = [[float('inf')]]*(ideal_sizes[smallest_ideal_size_idx]-len(new_run))
-                new_run.extend(dummy)
-
-            #new_run = Run(seqs=initial_seqs[smallest_seq_idx], tam_ideal=ideal_sizes[smallest_ideal_size_idx])
-
-
-            initial_seqs[smallest_seq_idx] = -1
-            ideal_sizes[smallest_ideal_size_idx] = float('inf')
-
-            self._files[smallest_ideal_size_idx].extend(new_run)
-
-        self._out_idx = self._get_empty_run_idx()
         self._print_fase()
 
     def _print_fase(self):
@@ -172,39 +114,16 @@ class Cascade(Polyphasic):
         alpha = (self.write_ops_counter / len(self.registers)) if len(self.registers) != 0 else 0
         return alpha
 
-    def _get_smallest_seq(self) -> list:
-        min = self._files[0]
-        for file in self._files:
-            if file and len(min[0]) > len(file[0]):
-                min = file
-        return min
-
-    def _qtd_seqs(self) -> int:
-        return sum([len(file) for file in self._files])
-
-    def _qtd_registros(self) -> int:
-        qtd = 0
-        for file in self._files:
-            qtd += sum([len(seq) for seq in file])
-        return qtd
-
-    def _get_input_files(self):
-        input_files = self._files.copy()
-        input_files.remove([])
-        return input_files
-
     def merge_files(self, file_idxs: list[int]) -> list[int]:
         sequences = [self._files[i].pop(0) for i in file_idxs]
         
         out = []
 
-        #print("sequences:", sequences)
         while not any([len(x) == 0 for x in sequences]):
             current_elements: list[int] = [sequences[i][0] for i in range(len(sequences)) if len(sequences[i]) > 0]
-            #self.write_ops_counter += len(current_elements)
             if len(current_elements) == 0:
                 break
-            #print("current_elements:", current_elements)
+            
             min_element     = min(current_elements)
             min_element_idx = current_elements.index(min_element)
 
@@ -233,7 +152,6 @@ class Cascade(Polyphasic):
                     merged = self.merge_files(files_to_be_merged)
                     self._files[out_idx].append(merged)
                     write_ops += len(merged)
-                print(write_ops)
                 self.write_ops_counter += write_ops
 
                 if len(self._files[out_idx][0]) >= len(self.registers):

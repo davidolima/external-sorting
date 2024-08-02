@@ -3,6 +3,7 @@
 from typing import *
 from polyphasic import Polyphasic
 from heap import Heap
+from utils import beta
 
 debug = False
 
@@ -96,7 +97,7 @@ class Cascade(Polyphasic):
         """
         stringify = lambda s: str(s)[1:-1].replace('[','{').replace(']','}').replace(',', '')
 
-        print(f"fase {self._fase} {self._calculate_alpha()}")
+        print(f"fase {self._fase} {self._calculate_beta()}")
         total = 0
         for i, s in enumerate(self._files):
             line_str  = str(i+1)
@@ -113,6 +114,19 @@ class Cascade(Polyphasic):
     def _calculate_alpha(self):
         alpha = (self.write_ops_counter / len(self.registers)) if len(self.registers) != 0 else 0
         return alpha
+    
+    def _calculate_beta(self):
+        num_sequences = 0
+        sum_of_seq_sizes = 0
+        for f in self._files:
+            if len(f) == 0:
+                continue
+            num_sequences += len(f)
+            # Sempre teremos `len(f)` sequencias de tamanho `len(f[0])` para 
+            # todo f, pois todas as seqs de f possuem o mesmo tamanho.
+            sum_of_seq_sizes += len(f)*len(f[0])
+
+        return beta(self.main_memory_size, num_sequences, sum_of_seq_sizes)
 
     def merge_files(self, file_idxs: list[int]) -> list[int]:
         sequences = [self._files[i].pop(0) for i in file_idxs]

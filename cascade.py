@@ -4,7 +4,7 @@ from typing import *
 from polyphasic import Polyphasic
 from heap import Heap
 
-debug = True
+debug = False
 
 class Cascade(Polyphasic):
     def __init__(
@@ -23,9 +23,10 @@ class Cascade(Polyphasic):
 
         self.registers = registers
         self.main_memory_size = main_memory_size # TODO: Move to polyphasic.
+        
         self._files = [[] for _ in range(max_open_files)]
+        self.write_ops_counter = 0
         self._fase = 0
-
         self._out_idx = -1
 
         #self._get_sorted_sequences()
@@ -101,6 +102,7 @@ class Cascade(Polyphasic):
                 # Complete the ideal size with dummy runs.
                 n_dummy_runs = tam_inicial_ideal[i] - len(register_to_add)
                 self._files[i].extend([[float('inf')] for _ in range(n_dummy_runs)])
+        self._print_fase()
 
     def _get_sorted_sequences(self) -> None: # NOTE: old.
         initial_seqs = Heap(
@@ -152,7 +154,7 @@ class Cascade(Polyphasic):
         """
         stringify = lambda s: str(s)[1:-1].replace('[','{').replace(']','}').replace(',', '')
 
-        print(f"fase {self._fase} {self.calculate_avg_seq_size()}")
+        print(f"fase {self._fase} {self._calculate_alpha()}")
         total = 0
         for i, s in enumerate(self._files):
             line_str  = str(i+1)
@@ -162,13 +164,13 @@ class Cascade(Polyphasic):
                 total += sum([len(x) for x in s])
             line_str += ": " + stringify(s)
             print(line_str)
-        print("n_total_seqs:", total)
+        if debug: print("n_total_seqs:", total)
 
         self._fase+=1
 
-    def calculate_avg_seq_size(self):
-        print("WARNING: `Cascate.calculate_avg_seq_size` has not been implemented yet.")
-        return 0
+    def _calculate_alpha(self):
+        alpha = (self.write_ops_counter / len(self.registers)) if len(self.registers) != 0 else 0
+        return alpha
 
     def _get_smallest_seq(self) -> list:
         min = self._files[0]
@@ -191,17 +193,15 @@ class Cascade(Polyphasic):
         input_files.remove([])
         return input_files
 
-    def merge_files(self, file_idxs: list[int], copy=False) -> list[int]:
-        if copy:
-            sequences = [self._files[i].copy().pop(0) for i in file_idxs]
-        else:
-            sequences = [self._files[i].pop(0) for i in file_idxs]
+    def merge_files(self, file_idxs: list[int]) -> list[int]:
+        sequences = [self._files[i].pop(0) for i in file_idxs]
         
         out = []
 
         #print("sequences:", sequences)
         while not any([len(x) == 0 for x in sequences]):
             current_elements: list[int] = [sequences[i][0] for i in range(len(sequences)) if len(sequences[i]) > 0]
+            #self.write_ops_counter += len(current_elements)
             if len(current_elements) == 0:
                 break
             #print("current_elements:", current_elements)
@@ -222,18 +222,25 @@ class Cascade(Polyphasic):
         while True:
             files_to_be_merged = list(range(self.max_open_files))
             files_to_be_merged.pop(out_idx)
-            for _ in range(self.max_open_files-1):
+            for _ in range(self.max_open_files-2):
                 if debug:
                     print("-----------------------")
                     print(f"[!] Current Merge: {[i+1 for i in files_to_be_merged]} -> {out_idx+1}")
                     self._print_fase()
 
+                write_ops = 0
                 while not any([len(self._files[idx]) == 0 for idx in files_to_be_merged]):
-                    self._files[out_idx].append(self.merge_files(files_to_be_merged))
+                    merged = self.merge_files(files_to_be_merged)
+                    self._files[out_idx].append(merged)
+                    write_ops += len(merged)
+                print(write_ops)
+                self.write_ops_counter += write_ops
 
-                if len(self._files[out_idx][0]) == (len(self.registers) + 1):
-                    self._files[out_idx][0].pop(-1) # Removes dummy run
+                if len(self._files[out_idx][0]) >= len(self.registers):
+                    if len(self._files[out_idx][0]) > len(self.registers): # Removes dummy runs
+                        self._files[out_idx][0] = self._files[out_idx][0][:len(self.registers)]
                     self._print_fase()
+                    print(f"final {self._calculate_alpha():.2f}")
                     return self._files[out_idx][0]
                 
                 out_idx = self._files.index([])
@@ -246,10 +253,10 @@ if __name__ == "__main__":
 
     # Parse command-line arguments
     parser = argparse.ArgumentParser(prog="Cascade Merge Sort", description="Por David Lima, Israel Pedreira e Márcio do Santos")
-    parser.add_argument("-p", "--max_open_files",   default=6)
-    parser.add_argument('-n', "--n_registers",      default=50)
+    parser.add_argument("-p", "--max_open_files",   default=5)
+    parser.add_argument('-n', "--n_registers",      default=85)
     parser.add_argument("-s", "--initial_seq_size", default=3)
-    parser.add_argument("-m", "--main_memory_size", default=3)
+    parser.add_argument("-m", "--main_memory_size", default=1)
     args = parser.parse_args()
 
     inpt = [random.randint(1, 100) for _ in range(args.n_registers)]
@@ -265,8 +272,7 @@ if __name__ == "__main__":
         main_memory_size     = args.main_memory_size,
     )
 
-    print("--- End Result --------------")
     result = cascade.sort()
-    
+    print("--- End Result --------------")
+    print(result)
     assert result == sorted(inpt), "The sorting failed."
-    print(result[-1])

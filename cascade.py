@@ -14,6 +14,7 @@ class Cascade(Polyphasic):
         initial_seq_size: int,
         max_open_files: int,
         main_memory_size:int,
+        verbose: bool = True,
     ) -> None:
         super().__init__(
             registers=registers,
@@ -29,6 +30,8 @@ class Cascade(Polyphasic):
         self.write_ops_counter = 0
         self._fase = 0
         self._out_idx = -1
+
+        self.verbose = verbose
 
         self._distribute_registers_in_files()
 
@@ -95,11 +98,16 @@ class Cascade(Polyphasic):
         """
         Imprime o estado da fase atual na notação pedida.
         """
+        if not self.verbose:
+            return
+        
         stringify = lambda s: str(s)[1:-1].replace('[','{').replace(']','}').replace(',', '')
 
-        print(f"fase {self._fase} {self._calculate_beta()}")
+        print(f"fase {self._fase} {self._calculate_beta():.2f}")
         total = 0
         for i, s in enumerate(self._files):
+            if len(s) == 0:
+                continue
             line_str  = str(i+1)
             if debug:
                 # Qtd. + tam. das seqs.
@@ -172,7 +180,8 @@ class Cascade(Polyphasic):
                     if len(self._files[out_idx][0]) > len(self.registers): # Removes dummy runs
                         self._files[out_idx][0] = self._files[out_idx][0][:len(self.registers)]
                     self._print_fase()
-                    print(f"final {self._calculate_alpha():.2f}")
+                    if self.verbose:
+                        print(f"final {self._calculate_alpha():.2f}")
                     return self._files[out_idx][0]
                 
                 out_idx = self._files.index([])
@@ -202,6 +211,7 @@ if __name__ == "__main__":
         max_open_files       = args.max_open_files,
         initial_seq_size     = args.initial_seq_size,
         main_memory_size     = args.main_memory_size,
+        verbose              = True
     )
 
     result = cascade.sort()

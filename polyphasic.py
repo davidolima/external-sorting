@@ -1,7 +1,9 @@
 #!/usr/bin/env python3
-
+import heapq
 from math import inf
 from typing import *
+import random
+import matplotlib.pyplot as plt
 
 #from utils import *
 
@@ -28,31 +30,6 @@ class Polyphasic:
             [[random.randint(1, 100)] for i in range(15)],
         ]
 
-    @staticmethod
-    def merge_n_lists(LL: List[List[int]]) -> List[int]:
-        """
-        Args:
-         LL: List of sequences of registers.
-        """
-        m: int = len(LL)
-        out: List[int] = []
-        iters = [0] * m
-
-        while True:
-            # Pegar elementos de cada lista, apontados por cada índice em `iters`.
-            current_elements: List[int] = [LL[i][iters[i]] for i in range(len(LL))] # Lista com todos os elementos sendo avaliados
-            current_elements = [current_elements[i] if iters[i] >= 0 else inf for i in range(len(LL))] # Substituir elementos com índice < 0 por `inf`
-            smallest_elem_idx: int = argmin(current_elements)
-            smallest_elem = current_elements[smallest_elem_idx]
-            if smallest_elem == inf: break
-
-            out.append(current_elements[smallest_elem_idx])
-            # Incrementar índice da lista correspondente
-            iters[smallest_elem_idx] += 1
-            if iters[smallest_elem_idx] >= len(LL[smallest_elem_idx]):
-                iters[smallest_elem_idx] = -1
-
-        return out
 
     @staticmethod
     def intercalar_sequencias(sequencias):
@@ -66,20 +43,25 @@ class Polyphasic:
     @staticmethod
     def intercalacao_polifasica(seqs, r, m):
         betas = []
+        total_escritas = 0
+        total_registros = sum(len(seq) for seq in seqs)
+
         for j in range(r):
             beta = sum(len(seq) for seq in seqs) / (m * len(seqs))
             betas.append(beta)
 
             print(f"fase {j} {beta:.2f}")
             for p in range(len(seqs)):
-                print(f'{p + 1}: {{',*seqs[p], '}')
+                print(f'{p + 1}: {{', *seqs[p], '}')
 
             seqs = [sorted(seq) for seq in seqs]
             seqs = [seqs[i] + seqs[i + 1] if i + 1 < len(seqs) else seqs[i] for i in range(0, len(seqs), 2)]
 
-        alpha = sum(len(seq) for seq in seqs) / sum(len(s) for s in seqs)
+            total_escritas += sum(len(seq) for seq in seqs)
+
+        alpha = total_escritas / total_registros
         print(f"final {alpha:.2f}")
-        return seqs
+        return seqs, betas, alpha
 
     @staticmethod
     def merge_2_lists(A: List[int], B: List[int], C: List[int]) -> List[int]:
@@ -115,6 +97,50 @@ class Polyphasic:
             a = next(iter_a, -1)
         return C
 
+    @staticmethod
+    def gerar_sequencias(r, tamanho_max):
+        seqs = [random.sample(range(1, 100), tamanho_max) for _ in range(r)]
+        return seqs
+
+    @staticmethod
+    def realizar_testes(m_vals, r_vals):
+        resultados_alpha = []
+        resultados_beta = []
+        for r in r_vals:
+            alphas = []
+            betas = []
+            for m in m_vals:
+                seqs = Polyphasic.gerar_sequencias(r, 10)
+                _, beta, alpha = Polyphasic.intercalacao_polifasica(seqs, r, m)
+                alphas.append(alpha)
+                betas.append(beta)  # Armazenar todos os valores de beta
+            resultados_alpha.append(alphas)
+            resultados_beta.append(betas)
+        return resultados_alpha, resultados_beta
+    @staticmethod
+    def plotar_graficos(m_vals, r_vals, resultados_alpha, resultados_beta):
+        # Plotando o gráfico de alpha(r) em função de m
+        for i, r in enumerate(r_vals):
+            plt.plot(m_vals, resultados_alpha[i], label=f'r = {r}')
+        plt.xlabel('m (capacidade da memória)')
+        plt.ylabel('α(r)')
+        plt.title('Gráfico de α(r) em função de m')
+        plt.legend()
+        plt.show()
+
+        # Plotando o gráfico de beta(m, j) em função de m
+        for i, r in enumerate(r_vals):
+            for j in range(len(resultados_beta[i][0])):  # Número de fases (j)
+                betas_j = [resultados_beta[i][k][j] for k in range(len(m_vals))]
+                plt.plot(m_vals, betas_j, label=f'r = {r}, j = {j}')
+        plt.xlabel('m (capacidade da memória)')
+        plt.ylabel('β(m, j)')
+        plt.title('Gráfico de β(m, j) em função de m')
+        plt.legend()
+        plt.show()
+
+
+
 if __name__ == "__main__":
     import random
     #Por enquanto, o algoritmo apaga as listas vazias a fim de evitar um loop infinito
@@ -144,10 +170,19 @@ if __name__ == "__main__":
     #print(seq_to_notation(init_seqs))
 
 
-    r=3
-    m=3
-    sorted = Polyphasic.intercalacao_polifasica(init_seqs, r, m)
-    print(f"Sorted:", *sorted[0])
+    # r=3
+    # m=3
+    # sorted = Polyphasic.intercalacao_polifasica(init_seqs, r, m)
+
+    # Parâmetros de Teste
+    m_vals = [2, 3, 4, 5]  # Capacidade da memória
+    r_vals = [2, 3, 4]  # Número de sequências iniciais
+
+    resultados_alpha, resultados_beta =  Polyphasic.realizar_testes(m_vals, r_vals)
+
+    # Plotar os Gráficos
+    Polyphasic.plotar_graficos(m_vals, r_vals, resultados_alpha, resultados_beta)
+
     # sorted = Polyphasic(
     #     registers = init_seqs,
     #     initial_seq_size = 1,

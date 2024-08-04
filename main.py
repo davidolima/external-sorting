@@ -1,9 +1,9 @@
 import argparse
 import random
 
-from p_ways import PWays
-from polyphasic import Polyphasic
-from cascade import Cascade
+from methods.p_ways import PWays
+from methods.polyphasic import Polyphasic
+from methods.cascade import Cascade
 
 if __name__ == "__main__":
     method = input()

@@ -13,14 +13,15 @@ class Cascade:
         self,
         registers: List[int],
         max_open_files: int,
-
+        main_memory_size:int,
         verbose: bool = True,
         _debug: bool = False,
     ) -> None:
 
         self.registers = registers
         self.max_open_files = max_open_files
-
+        self.main_memory_size = main_memory_size # TODO: Move to polyphasic.
+        
         self._files = [[] for _ in range(max_open_files)]
         self.write_ops_per_phase = []
         self._fase = 0
@@ -28,7 +29,7 @@ class Cascade:
         self.verbose = verbose
         self._debug = _debug
 
-        self._distribute_registers_in_files()
+        self._distribute_register_in_files()
 
     @staticmethod
     def _calculate_ideal_previous_line(line: List[int]) -> List[int]:
@@ -67,7 +68,7 @@ class Cascade:
             if _debug: print(curr_line)
         return curr_line
 
-    def _distribute_registers_in_files(self) -> None:
+    def _distribute_register_in_files(self) -> None:
         tam_inicial_ideal = Cascade._get_ideal_initial_seq_sizes(
             len(self.registers),
             self.max_open_files,
@@ -230,7 +231,6 @@ if __name__ == "__main__":
     cascade = Cascade(
         registers            = inpt,
         max_open_files       = int(args.max_open_files),
-        initial_seq_size     = int(args.initial_seq_size),
         main_memory_size     = int(args.main_memory_size),
         verbose              = True,
         _debug                = bool(args.debug),

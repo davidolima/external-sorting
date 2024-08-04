@@ -96,9 +96,7 @@ class Evaluator():
             regs = self._generate_random_sequence(size=r)
             alg = Cascade(
                 registers=regs,
-                initial_seq_size=1,
                 max_open_files=k,
-                main_memory_size=m,
                 verbose=False,
             )
 

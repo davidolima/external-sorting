@@ -12,18 +12,15 @@ class Cascade:
     def __init__(
         self,
         registers: List[int],
-        initial_seq_size: int,
         max_open_files: int,
-        main_memory_size:int,
+
         verbose: bool = True,
         _debug: bool = False,
     ) -> None:
 
         self.registers = registers
-        self.initial_seq_size = initial_seq_size
         self.max_open_files = max_open_files
-        self.main_memory_size = main_memory_size # TODO: Move to polyphasic.
-        
+
         self._files = [[] for _ in range(max_open_files)]
         self.write_ops_per_phase = []
         self._fase = 0

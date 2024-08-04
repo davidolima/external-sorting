@@ -32,10 +32,8 @@ if __name__ == "__main__":
             )
         case 'C':
             algoritmo = Cascade(
-                main_memory_size=m,
                 registers=registers,
                 max_open_files=k,
-                initial_seq_size=1,
             )
         case _:
             raise ValueError(f"O método `{method}` não existe.")

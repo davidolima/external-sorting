@@ -17,7 +17,7 @@ class Evaluator():
     def __init__(self, algoritmo, output_path: str = None):
         self.algoritmo = algoritmo
         assert self.algoritmo in ("B","P","C"), f"Algoritmo não reconhecido: `{self.algoritmo}`"
-        print(f"Running with method `{algoritmo}`.")
+        print(f"Running with {self.get_alg_name()} sort.")
 
         self.output_path = output_path
         assert os.path.isdir(self.output_path), "Please select a directory as an output path."
@@ -39,7 +39,7 @@ class Evaluator():
 
     def generate_graph(self, x, y, x_label, y_label, title = None):
         curr_time_str = datetime.datetime.now().strftime("%d-%m-%Y_%H-%M-%S")
-        fpath = os.path.join(self.output_path, f"generated_graph-{curr_time_str}.png")
+        fpath = os.path.join(self.output_path, f"{self.get_alg_name()}_graph-{curr_time_str}.png")
         title = f"{x_label} x {y_label}" if title is None else title
         print("[!] Generating graph...", end=' ')
         plt.plot(x, y)
@@ -75,13 +75,22 @@ class Evaluator():
                 alg._index_input_files.add(file_index)
 
         elif self.algoritmo == 'P':
-            regs = self._generate_random_sequence(size=r)
+            initial_sequences = self._generate_random_runs(size=r, main_memory_size=m)
             alg = Polyphasic(
-                registers=regs,
-                initial_seq_size=1,
+                registers=[],
+                main_memory_size=m,
                 num_sorted_sequences=r,
                 max_open_files=k,
             )
+            alg.registers = []
+            for x in initial_sequences:
+                alg.registers.extend(x[0])
+
+            togglePrint()
+            _, alpha, _ = alg.sort(initial_sequences)
+            togglePrint()
+
+            return alpha
 
         else:
             regs = self._generate_random_sequence(size=r)
@@ -140,13 +149,20 @@ if __name__ == "__main__":
         output_path="results/"
     )
 
+    M, K = 3, 4
     alphas = evaluator.test_alpha(
-        m=3,
-        k=4,
+        m=M,
+        k=K,
         r_lower_limit=3,
         r_upper_limit=100,
         save_results=True
     )
 
     plt.style.use('ggplot')
-    evaluator.generate_graph(list(range(3,100)), alphas, x_label=r"Nº Sequencias iniciais ($r$)", y_label=r"Taxa de processamento ($\alpha$)")
+    evaluator.generate_graph(
+        x = list(range(3,100)),
+        y = alphas,
+        x_label = r"Nº Sequencias iniciais ($r$)",
+        y_label = r"Taxa de processamento ($\alpha$)",
+        title=f"m={M} k={K}"
+    )

@@ -4,6 +4,7 @@ from math import inf
 from typing import *
 import random
 import matplotlib.pyplot as plt
+from heap import Heap
 
 #from utils import *
 
@@ -59,7 +60,7 @@ class Polyphasic:
     def polyphase_merge_sort(self,data):
         initial_runs = data
         print(f"Initial runs: {initial_runs}")
-        k = len(initial_runs)
+        k = self.max_open_files
         runs = [initial_runs]
 
         while len(runs[-1]) > 1:
@@ -90,7 +91,9 @@ class Polyphasic:
             betas.append(beta)
         return betas
 
-    def sort(self,data):
+    def sort(self):
+        heap = Heap(self.main_memory_size, self.registers)
+        data = heap.sort()
         runs = self.polyphase_merge_sort(data)
         alpha = self.calculate_alpha(runs)
         betas = self.calculate_beta(runs, self.main_memory_size)
@@ -149,11 +152,13 @@ class Polyphasic:
 if __name__ == "__main__":
     import random
 
-    init_seqs = [
-        [1,5,6,7,8],
-        [1,3,4,7],
-        [2,3,4,9,10]
-    ]
+    # init_seqs = [
+    #     [1,5,6,7,8],
+    #     [1,3,4,7],
+    #     [2,3,4,9,10]
+    # ]
+
+    init_seqs = [random.randint(1, 100) for _ in range(14)]
 
     # [x.sort() for x in init_seqs]
     # print(f"Sequências iniciais ({len(init_seqs)}):")
@@ -162,12 +167,12 @@ if __name__ == "__main__":
     #print(seq_to_notation(init_seqs))
 
     algoritmo = Polyphasic(
-        main_memory_size=3,
-        registers=[],
+        main_memory_size=4,
+        registers=init_seqs,
         max_open_files=3,
         num_sorted_sequences=1,
     )
-    sorted = algoritmo.sort(init_seqs)
+    sorted = algoritmo.sort()
 
     # Parâmetros de Teste
     # m_vals = [2, 3, 4, 5]  # Capacidade da memória

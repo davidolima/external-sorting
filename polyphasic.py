@@ -11,24 +11,15 @@ class Polyphasic:
     def __init__(
         self,
         registers: List[int],
-        initial_seq_size: int,
+        main_memory_size: int,
         num_sorted_sequences: int,
         max_open_files: int,
     ) -> None:
         self.max_open_files = max_open_files
-        self.initial_seq_size = initial_seq_size
+        self.main_memory_size = main_memory_size
         self.num_sorted_size = num_sorted_sequences
         self.registers = registers
 
-    def _generate_initial_sequences(self) -> List[List[List[int]]]:
-        # TODO: Mudar para Heap.
-        return [
-            [[random.randint(1, 100)] for i in range(12)],
-            [[random.randint(1, 100)] for i in range(8)],
-            [],
-            [[random.randint(1, 100)] for i in range(14)],
-            [[random.randint(1, 100)] for i in range(15)],
-        ]
 
 
     @staticmethod
@@ -40,8 +31,10 @@ class Polyphasic:
                     resultado.append(seq.pop(0))
         return resultado
 
-    @staticmethod
-    def intercalacao_polifasica(seqs, r, m):
+
+    def sort(self,seqs):
+        m = self.main_memory_size
+        r = self.max_open_files
         betas = []
         total_escritas = 0
         total_registros = sum(len(seq) for seq in seqs)
@@ -111,7 +104,7 @@ class Polyphasic:
             betas = []
             for m in m_vals:
                 seqs = Polyphasic.gerar_sequencias(r, 10)
-                _, beta, alpha = Polyphasic.intercalacao_polifasica(seqs, r, m)
+                _, beta, alpha = Polyphasic.sort(seqs, r, m)
                 alphas.append(alpha)
                 betas.append(beta)  # Armazenar todos os valores de beta
             resultados_alpha.append(alphas)
@@ -169,19 +162,22 @@ if __name__ == "__main__":
     print("Organização inicial:")
     #print(seq_to_notation(init_seqs))
 
-
-    # r=3
-    # m=3
-    # sorted = Polyphasic.intercalacao_polifasica(init_seqs, r, m)
+    algoritmo = Polyphasic(
+        main_memory_size=3,
+        registers=[],
+        max_open_files=3,
+        num_sorted_sequences=1,
+    )
+    sorted = algoritmo.sort(init_seqs)
 
     # Parâmetros de Teste
-    m_vals = [2, 3, 4, 5]  # Capacidade da memória
-    r_vals = [2, 3, 4]  # Número de sequências iniciais
-
-    resultados_alpha, resultados_beta =  Polyphasic.realizar_testes(m_vals, r_vals)
-
-    # Plotar os Gráficos
-    Polyphasic.plotar_graficos(m_vals, r_vals, resultados_alpha, resultados_beta)
+    # m_vals = [2, 3, 4, 5]  # Capacidade da memória
+    # r_vals = [2, 3, 4]  # Número de sequências iniciais
+    #
+    # resultados_alpha, resultados_beta =  Polyphasic.realizar_testes(m_vals, r_vals)
+    #
+    # # Plotar os Gráficos
+    # Polyphasic.plotar_graficos(m_vals, r_vals, resultados_alpha, resultados_beta)
 
     # sorted = Polyphasic(
     #     registers = init_seqs,

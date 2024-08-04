@@ -27,7 +27,7 @@ class Cascade(Polyphasic):
         self.main_memory_size = main_memory_size # TODO: Move to polyphasic.
         
         self._files = [[] for _ in range(max_open_files)]
-        self.write_ops_counter = 0
+        self.write_ops_per_phase = []
         self._fase = 0
         self._out_idx = -1
 
@@ -78,20 +78,25 @@ class Cascade(Polyphasic):
             self.max_open_files
         )
 
+        write_ops = 0
         # Add sequences to files corresponding to ideal sizes.
         for i in range(self.max_open_files):
             offset = sum(tam_inicial_ideal[:i])
             runs = [[x] for x in self.registers]
             
             if len(runs) >= offset + tam_inicial_ideal[i]:
-                self._files[i].extend(runs[offset:offset+tam_inicial_ideal[i]])
+                registers_to_add = runs[offset:offset+tam_inicial_ideal[i]]
             else:
-                register_to_add = runs[offset:len(runs)]
-                self._files[i].extend(register_to_add)
-                
-                # Complete the ideal size with dummy runs.
-                n_dummy_runs = tam_inicial_ideal[i] - len(register_to_add)
-                self._files[i].extend([[float('inf')] for _ in range(n_dummy_runs)])
+                registers_to_add = runs[offset:len(runs)]
+
+            self._files[i].extend(registers_to_add)
+            write_ops += len(registers_to_add)
+
+            # Complete the ideal size with dummy runs.
+            n_dummy_runs = tam_inicial_ideal[i] - len(registers_to_add)
+            self._files[i].extend([[float('inf')] for _ in range(n_dummy_runs)])
+
+        self.write_ops_per_phase.append(write_ops)
         self._print_fase()
 
     def _print_fase(self):
@@ -103,7 +108,7 @@ class Cascade(Polyphasic):
         
         stringify = lambda s: str(s)[1:-1].replace('[','{').replace(']','}').replace(',', '')
 
-        print(f"fase {self._fase} {self._calculate_beta():.2f}")
+        print(f"fase {self._fase} {self._calculate_current_beta():.2f}")
         total = 0
         for i, s in enumerate(self._files):
             if len(s) == 0:
@@ -120,21 +125,32 @@ class Cascade(Polyphasic):
         self._fase+=1
 
     def _calculate_alpha(self):
-        alpha = (self.write_ops_counter / len(self.registers)) if len(self.registers) != 0 else 0
+        alpha = (sum(self.write_ops_per_phase) / len(self.registers)) if len(self.registers) != 0 else 0
         return alpha
-    
-    def _calculate_beta(self):
-        num_sequences = 0
-        sum_of_seq_sizes = 0
-        for f in self._files:
-            if len(f) == 0:
-                continue
-            num_sequences += len(f)
-            # Sempre teremos `len(f)` sequencias de tamanho `len(f[0])` para 
-            # todo f, pois todas as seqs de f possuem o mesmo tamanho.
-            sum_of_seq_sizes += len(f)*len(f[0])
 
-        return beta(self.main_memory_size, num_sequences, sum_of_seq_sizes)
+    def get_beta_at_phase(self, phase: int = -1):
+        """
+        NOTE: If `phase` is not specified, considers the last phase calculated.
+        """
+
+        assert -1 <= phase < len(self.write_ops_per_phase), f"There is no phase `{phase}`"
+
+        if phase < 0:
+            num_sequences = sum([len(x) for x in self._files])
+        else:
+            num_sequences = sum([len(x) for x in self._files[:phase+1]])
+        write_ops_at_phase = self.write_ops_per_phase[phase]  # Last entry on the list
+
+        if debug: print("num_sequences:", num_sequences, "write_ops_at_phase:", write_ops_at_phase)
+
+        return beta(
+            self.main_memory_size,
+            num_sequences,
+            write_ops_at_phase,
+        )
+
+    def _calculate_current_beta(self):
+        return self.get_beta_at_phase(-1)
 
     def merge_files(self, file_idxs: list[int]) -> list[int]:
         sequences = [self._files[i].pop(0) for i in file_idxs]
@@ -174,7 +190,7 @@ class Cascade(Polyphasic):
                     merged = self.merge_files(files_to_be_merged)
                     self._files[out_idx].append(merged)
                     write_ops += len(merged)
-                self.write_ops_counter += write_ops
+                self.write_ops_per_phase.append(write_ops)
 
                 if len(self._files[out_idx][0]) >= len(self.registers):
                     if len(self._files[out_idx][0]) > len(self.registers): # Removes dummy runs
@@ -200,7 +216,7 @@ if __name__ == "__main__":
     parser.add_argument("-m", "--main_memory_size", default=1)
     args = parser.parse_args()
 
-    inpt = [random.randint(1, 100) for _ in range(args.n_registers)]
+    inpt = [random.randint(1, 100) for _ in range(int(args.n_registers))]
 
     print("input:", inpt)
     print("expected output:", sorted(inpt))
@@ -208,9 +224,9 @@ if __name__ == "__main__":
     # Run algorithm
     cascade = Cascade(
         registers            = inpt,
-        max_open_files       = args.max_open_files,
-        initial_seq_size     = args.initial_seq_size,
-        main_memory_size     = args.main_memory_size,
+        max_open_files       = int(args.max_open_files),
+        initial_seq_size     = int(args.initial_seq_size),
+        main_memory_size     = int(args.main_memory_size),
         verbose              = True
     )
 

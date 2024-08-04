@@ -32,63 +32,75 @@ class Polyphasic:
         return resultado
 
 
-    def sort(self,seqs):
-        m = self.main_memory_size
-        r = self.max_open_files
+    # def sort(self,seqs):
+    #     m = self.main_memory_size
+    #     r = self.max_open_files
+    #     betas = []
+    #     total_escritas = 0
+    #     total_registros = sum(len(seq) for seq in seqs)
+    #
+    #     for j in range(r):
+    #         beta = sum(len(seq) for seq in seqs) / (m * len(seqs))
+    #         betas.append(beta)
+    #
+    #         print(f"fase {j} {beta:.2f}")
+    #         for p in range(len(seqs)):
+    #             print(f'{p + 1}: {{', *seqs[p], '}')
+    #
+    #         seqs = [sorted(seq) for seq in seqs]
+    #         seqs = [seqs[i] + seqs[i + 1] if i + 1 < len(seqs) else seqs[i] for i in range(0, len(seqs), 2)]
+    #
+    #         total_escritas += sum(len(seq) for seq in seqs)
+    #
+    #     alpha = total_escritas / total_registros
+    #     print(f"final {alpha:.2f}")
+    #     return seqs, betas, alpha
+
+    def polyphase_merge_sort(self,data):
+        initial_runs = data
+        print(f"Initial runs: {initial_runs}")
+        k = len(initial_runs)
+        runs = [initial_runs]
+
+        while len(runs[-1]) > 1:
+            new_run = []
+            for i in range(0, len(runs[-1]), k):
+                merge_runs = []
+                for j in range(k):
+                    if i + j < len(runs[-1]):
+                        merge_runs.extend(runs[-1][i + j])
+                merge_runs.sort()
+                new_run.append(merge_runs)
+            runs.append(new_run)
+            print(runs)
+
+        return runs
+
+    def calculate_alpha(self,runs):
+        total_writes = sum(len(run) for run in runs[-1])
+        total_records = sum(len(run) for run in runs[0])
+        return total_writes / total_records
+
+    def calculate_beta(self,runs, memory_size):
         betas = []
-        total_escritas = 0
-        total_registros = sum(len(seq) for seq in seqs)
-
-        for j in range(r):
-            beta = sum(len(seq) for seq in seqs) / (m * len(seqs))
+        for run in runs:
+            total_length = sum(len(seq) for seq in run)
+            avg_length = total_length / len(run)
+            beta = avg_length / memory_size
             betas.append(beta)
+        return betas
 
-            print(f"fase {j} {beta:.2f}")
-            for p in range(len(seqs)):
-                print(f'{p + 1}: {{', *seqs[p], '}')
+    def sort(self,data):
+        runs = self.polyphase_merge_sort(data)
+        alpha = self.calculate_alpha(runs)
+        betas = self.calculate_beta(runs, self.main_memory_size)
+        for c in range(len(runs)):
+            print(f'Fase {c} {betas[c]:.2f}:')
+            for l in range(len(runs[c])):
+                print(f'{l + 1}: {{{" ".join(map(str, runs[c][l]))}}}')
 
-            seqs = [sorted(seq) for seq in seqs]
-            seqs = [seqs[i] + seqs[i + 1] if i + 1 < len(seqs) else seqs[i] for i in range(0, len(seqs), 2)]
-
-            total_escritas += sum(len(seq) for seq in seqs)
-
-        alpha = total_escritas / total_registros
-        print(f"final {alpha:.2f}")
-        return seqs, betas, alpha
-
-    @staticmethod
-    def merge_2_lists(A: List[int], B: List[int], C: List[int]) -> List[int]:
-        """
-        A, B: Listas que serão mescladas.
-        C: Lista vazia de saída.
-        """
-        iter_a = iter(A)
-        iter_b = iter(B)
-        a = next(iter_a, -1)
-        b = next(iter_b, -1)
-        while (a != -1 and b != -1):
-            if a > b:
-                B.remove(b)
-                C.append(b)
-                b = next(iter_b, -1)
-            else:
-                A.remove(a)
-                C.append(a)
-                a = next(iter_a, -1)
-
-        # Se não houver mais elementos em A, adiciona os elementos restantes
-        # de B em C.
-        if (a == -1):
-            while (b != -1):
-                C.append(b)
-                b = next(iter_b, -1)
-            return C
-
-        # Caso simétrico ao anterior, porém para B vazio.
-        while (a != -1):
-            C.append(a)
-            a = next(iter_a, -1)
-        return C
+        print(f'Final {alpha}')
+        return runs, alpha, betas
 
     @staticmethod
     def gerar_sequencias(r, tamanho_max):
@@ -136,30 +148,17 @@ class Polyphasic:
 
 if __name__ == "__main__":
     import random
-    #Por enquanto, o algoritmo apaga as listas vazias a fim de evitar um loop infinito
-    #Estou resolvendo isso, mas ele já retorna os valores ordenados
-    #Além disso também estou com problema pra identificar o fim da fase nesse algoritmo
-    #TODO: resolver os problemas citados acima
-
-    # init_seqs = [
-    #         [random.randint(1, 100) for i in range(12)],
-    #         [random.randint(1, 100) for i in range(8)],
-    #         [random.randint(1, 100) for i in range(14)],
-    #         [random.randint(1, 100) for i in range(15)],
-    #         [],
-    # ]
 
     init_seqs = [
         [1,5,6,7,8],
         [1,3,4,7],
-        [2,3,4,9,10],
-        []
+        [2,3,4,9,10]
     ]
 
-    [x.sort() for x in init_seqs]
-    print(f"Sequências iniciais ({len(init_seqs)}):")
-    [print(seq) for seq in init_seqs]
-    print("Organização inicial:")
+    # [x.sort() for x in init_seqs]
+    # print(f"Sequências iniciais ({len(init_seqs)}):")
+    # [print(seq) for seq in init_seqs]
+    # print("Organização inicial:")
     #print(seq_to_notation(init_seqs))
 
     algoritmo = Polyphasic(

@@ -8,7 +8,8 @@ from methods.cascade import Cascade
 if __name__ == "__main__":
     method = input()
     m, k, r, n = map(int, input().split(' '))
-    registers = list(map(int, input().split(' ')))
+    registers = list(map(int, input().split(' ')))[:n]
+
     if len(registers) == 0:
         registers = [random.randint(0,100) for _ in range(n)]
 

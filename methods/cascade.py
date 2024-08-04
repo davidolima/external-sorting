@@ -8,8 +8,6 @@ from typing import *
 from utils.heap import Heap
 from utils.utils import beta
 
-debug = False
-
 class Cascade:
     def __init__(
         self,
@@ -18,13 +16,8 @@ class Cascade:
         max_open_files: int,
         main_memory_size:int,
         verbose: bool = True,
+        _debug: bool = False,
     ) -> None:
-        # super().__init__(
-        #     registers=registers,
-        #     initial_seq_size=initial_seq_size,
-        #     num_sorted_sequences=0, # <--- Não faz nada
-        #     max_open_files=max_open_files
-        # )
 
         self.registers = registers
         self.initial_seq_size = initial_seq_size
@@ -34,9 +27,9 @@ class Cascade:
         self._files = [[] for _ in range(max_open_files)]
         self.write_ops_per_phase = []
         self._fase = 0
-        self._out_idx = -1
 
         self.verbose = verbose
+        self._debug = _debug
 
         self._distribute_registers_in_files()
 
@@ -68,40 +61,44 @@ class Cascade:
         return [0] + next_line
 
     @staticmethod
-    def _get_ideal_initial_seq_sizes(n_seqs: int, max_open_files: int) -> List[int]:
+    def _get_ideal_initial_seq_sizes(n_seqs: int, max_open_files: int, _debug=False) -> List[int]:
         curr_line = [0] * max_open_files
         curr_line[-1] = 1
-        if debug: print(curr_line)
+        if _debug: print(curr_line)
         while (sum(curr_line) < n_seqs):
             curr_line = Cascade._calculate_ideal_previous_line(curr_line)
-            if debug: print(curr_line)
+            if _debug: print(curr_line)
         return curr_line
 
     def _distribute_registers_in_files(self) -> None:
         tam_inicial_ideal = Cascade._get_ideal_initial_seq_sizes(
-            len(self.registers), 
-            self.max_open_files
+            len(self.registers),
+            self.max_open_files,
+            _debug = self._debug,
         )
+        tam_inicial_ideal.remove(0)
 
+        registers = self.registers.copy()
         write_ops = 0
-        # Add sequences to files corresponding to ideal sizes.
-        for i in range(self.max_open_files):
-            offset = sum(tam_inicial_ideal[:i])
-            runs = [[x] for x in self.registers]
-            
-            if len(runs) >= offset + tam_inicial_ideal[i]:
-                registers_to_add = runs[offset:offset+tam_inicial_ideal[i]]
-            else:
-                registers_to_add = runs[offset:len(runs)]
+        file_idx = 0
+        while len(registers) > 0:
+            if len(self._files[file_idx%(len(self._files)-1)]) == tam_inicial_ideal[file_idx%(len(self._files)-1)]:
+                file_idx += 1
+                continue
 
-            self._files[i].extend(registers_to_add)
-            write_ops += len(registers_to_add)
+            self._files[file_idx%(len(self._files)-1)].append([registers.pop()])
 
+            write_ops += 1
+            file_idx += 1
+
+        for i in range(self.max_open_files-1):
             # Complete the ideal size with dummy runs.
-            n_dummy_runs = tam_inicial_ideal[i] - len(registers_to_add)
+            n_dummy_runs = tam_inicial_ideal[i] - len(self._files[i])
             self._files[i].extend([[float('inf')] for _ in range(n_dummy_runs)])
 
-        self.write_ops_per_phase.append(write_ops)
+        # Do we need to count the number of write ops when first distributing
+        # the sequences on files?
+        self.write_ops_per_phase.append(0)#(write_ops)
         self._print_fase()
 
     def _print_fase(self):
@@ -119,13 +116,13 @@ class Cascade:
             if len(s) == 0:
                 continue
             line_str  = str(i+1)
-            if debug:
+            if self._debug:
                 # Qtd. + tam. das seqs.
                 line_str += '(' + str(len(s)) + (')' if len(s) < 1 else (',' + str(len(s[0])) + ')'))
                 total += sum([len(x) for x in s])
             line_str += ": " + stringify(s)
             print(line_str)
-        if debug: print("n_total_seqs:", total)
+        if self._debug: print("n_total_seqs:", total)
 
         self._fase+=1
 
@@ -146,7 +143,7 @@ class Cascade:
             num_sequences = sum([len(x) for x in self._files[:phase+1]])
         write_ops_at_phase = self.write_ops_per_phase[phase]  # Last entry on the list
 
-        if debug: print("num_sequences:", num_sequences, "write_ops_at_phase:", write_ops_at_phase)
+        if self._debug: print("num_sequences:", num_sequences, "write_ops_at_phase:", write_ops_at_phase)
 
         return beta(
             self.main_memory_size,
@@ -189,7 +186,7 @@ class Cascade:
             files_to_be_merged = list(range(self.max_open_files))
             files_to_be_merged.pop(out_idx)
             for _ in range(self.max_open_files-2):
-                if debug:
+                if self._debug:
                     print("-----------------------")
                     print(f"[!] Current Merge: {[i+1 for i in files_to_be_merged]} -> {out_idx+1}")
                     self._print_fase()
@@ -222,25 +219,26 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(prog="Cascade Merge Sort", description="Por David Lima, Israel Pedreira e Márcio do Santos")
     parser.add_argument("-p", "--max_open_files",   default=5)
     parser.add_argument('-n', "--n_registers",      default=85)
-    parser.add_argument("-s", "--initial_seq_size", default=3)
-    parser.add_argument("-m", "--main_memory_size", default=1)
+    parser.add_argument("-m", "--main_memory_size", default=3)
+    parser.add_argument("-s", "--initial_seq_size", default=1)
+    parser.add_argument("-d", "--debug", default=False, type=bool)
     args = parser.parse_args()
 
     inpt = [random.randint(1, 100) for _ in range(int(args.n_registers))]
 
     print("input:", inpt)
     print("expected output:", sorted(inpt))
-    
+
     # Run algorithm
     cascade = Cascade(
         registers            = inpt,
         max_open_files       = int(args.max_open_files),
         initial_seq_size     = int(args.initial_seq_size),
         main_memory_size     = int(args.main_memory_size),
-        verbose              = True
+        verbose              = True,
+        _debug                = bool(args.debug),
     )
 
     result = cascade.sort()
     print("--- End Result --------------")
-    print(result)
-    assert result == sorted(inpt), "The sorting failed."
+    print("alpha:", result)

@@ -1,6 +1,6 @@
 from typing import List, Set, Union
-from heap import Heap
-from utils import beta
+from utils.heap import Heap
+from utils.utils import beta
 import math
 import os
 
@@ -27,9 +27,9 @@ class PWays:
         self._save: bool = save_results
 
 
-    def _get_sorted_sequences(self) -> None:
+    def _get_sorted_sequences(self) -> int:
         heap = Heap(self._main_memory_size, self._registers)
-        sorted_sequences = [[1, 5, 6, 7 , 8], [2, 3, 4, 9, 10], [1, 3, 4, 7]]
+        sorted_sequences = heap.sort()
 
         for i in range(self._num_sorted_sequences):
             file_index: int = i % self._num_input_files
@@ -136,6 +136,8 @@ class PWays:
         # save the results
         if self._save:
             self._save_results(alpha)
+
+        return alpha
     
     def _save_results(self, alpha: float) -> None:
         if not os.path.exists(self._result_path):

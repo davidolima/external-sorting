@@ -5,7 +5,7 @@ sys.path.append('..')
 
 from typing import *
 from utils.heap import Heap
-from utils.utils import beta
+from utils.utils import beta, argmin
 
 class Cascade:
     def __init__(
@@ -85,15 +85,23 @@ class Cascade:
             _debug = self._debug,
         )
 
-        tam_inicial_ideal.remove(0)
-
         write_ops = 0
-        for i in range(len(sequencias_iniciais)):
-            file_idx = i%(len(self._files)-1)
-            self._files[file_idx].append(sequencias_iniciais[i])
-            write_ops += len(sequencias_iniciais[i])
+        seq_idx = 0
+        file_idx = 0
+        while len(sequencias_iniciais) > 0:
+            if tam_inicial_ideal[file_idx % self.max_open_files] == 0:
+                file_idx += 1
+                continue
+            curr_seq = sequencias_iniciais.pop(0)
+            self._files[file_idx % self.max_open_files].append(curr_seq)
 
-        for i in range(self.max_open_files-1):
+            write_ops += len(curr_seq)
+            seq_idx += 1
+            file_idx += 1
+
+        for i in range(self.max_open_files):
+            if tam_inicial_ideal[i] == 0:
+                continue
             n_dummy_runs = tam_inicial_ideal[i] - len(self._files[i])
             self._files[i].extend([[float('inf')] for _ in range(n_dummy_runs)])
 
@@ -183,7 +191,7 @@ class Cascade:
         Returns the average load `alpha`.
         """
         out_idx = self._files.index([])
-        while True:
+        while sum(len(x) for x in self._files) > 1:
             files_to_be_merged = list(range(self.max_open_files))
             files_to_be_merged.pop(out_idx)
             for _ in range(self.max_open_files-2):
@@ -202,16 +210,21 @@ class Cascade:
                 if len(self._files[out_idx][0]) >= len(self.registers):
                     if len(self._files[out_idx][0]) > len(self.registers): # Removes dummy runs
                         self._files[out_idx][0] = self._files[out_idx][0][:len(self.registers)]
+
                     self._print_fase()
                     alpha = self._calculate_alpha()
-                    if self.verbose:
-                        print(f"final {alpha:.2f}")
+                    if self.verbose: print(f"final {alpha:.2f}")
+
                     return alpha
                 
                 out_idx = self._files.index([])
                 files_to_be_merged.remove(out_idx)
             self._print_fase()
-        
+
+        alpha = self._calculate_alpha()
+        if self.verbose: print(f"final {alpha:.2f}")
+        return alpha
+
 if __name__ == "__main__":
     import random
     import argparse

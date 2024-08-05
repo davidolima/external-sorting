@@ -139,28 +139,32 @@ if __name__ == "__main__":
     import argparse
 
     parser = argparse.ArgumentParser()
-    parser.add_argument("-a", "--algoritmo", default='C')
+    parser.add_argument("-a", "--algoritmo",        type=str, default='C')
+    parser.add_argument("-m", "--main-memory-size", type=int, default=3)
+    parser.add_argument("-k", "--max-open-files",   type=int, default=4)
+    parser.add_argument("-rl", "--r-lower-limit",   type=int, default=3)
+    parser.add_argument("-ru", "--r-upper-limit",   type=int, default=100)
+    parser.add_argument("-o", "--output",           type=str, default="results/")
     args = parser.parse_args()
 
     evaluator = Evaluator(
         algoritmo=args.algoritmo,
-        output_path="results/"
+        output_path=args.output
     )
 
-    M, K = 3, 4
     alphas = evaluator.test_alpha(
-        m=M,
-        k=K,
-        r_lower_limit=3,
-        r_upper_limit=100,
+        m=args.main_memory_size,
+        k=args.max_open_files,
+        r_lower_limit=args.r_lower_limit,
+        r_upper_limit=args.r_upper_limit,
         save_results=True
     )
 
     plt.style.use('ggplot')
     evaluator.generate_graph(
-        x = list(range(3,100)),
+        x = list(range(int(args.r_lower_limit),int(args.r_upper_limit))),
         y = alphas,
         x_label = r"Nº Sequencias iniciais ($r$)",
         y_label = r"Taxa de processamento ($\alpha$)",
-        title=f"m={M} k={K}"
+        title=f"m={args.main_memory_size} k={args.max_open_files}"
     )

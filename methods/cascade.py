@@ -79,6 +79,8 @@ class Cascade:
         if sequencias_iniciais is None:
             sequencias_iniciais = Heap(self.main_memory_size, self.registers).sort()
 
+        if self._debug: print("seqs inicias:", sequencias_iniciais)
+
         tam_inicial_ideal = Cascade._get_ideal_initial_seq_sizes(
             len(sequencias_iniciais),
             self.max_open_files,
@@ -89,7 +91,7 @@ class Cascade:
         seq_idx = 0
         file_idx = 0
         while len(sequencias_iniciais) > 0:
-            if tam_inicial_ideal[file_idx % self.max_open_files] == 0:
+            if tam_inicial_ideal[file_idx % self.max_open_files] == 0 or len(self._files[file_idx % self.max_open_files]) >= tam_inicial_ideal[file_idx % self.max_open_files]:
                 file_idx += 1
                 continue
             curr_seq = sequencias_iniciais.pop(0)

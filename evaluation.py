@@ -1,5 +1,7 @@
 #!/usr/bin/env python3
 
+from logging import debug
+from matplotlib.font_manager import generate_fontconfig_pattern
 from utils.heap import Heap
 from utils.utils import togglePrint
 
@@ -10,11 +12,12 @@ from methods.polyphasic import Polyphasic
 import os
 import random
 import time, datetime
+from typing import *
 
 import matplotlib.pyplot as plt
 
 class Evaluator():
-    def __init__(self, algoritmo, output_path: str = None):
+    def __init__(self, algoritmo, output_path: Optional[str] = None) -> None:
         self.algoritmo = algoritmo
         assert self.algoritmo in ("B","P","C"), f"Algoritmo não reconhecido: `{self.algoritmo}`"
         print(f"Running with {self.get_alg_name()} sort.")
@@ -22,13 +25,18 @@ class Evaluator():
         self.output_path = output_path
         assert os.path.isdir(self.output_path), "Please select a directory as an output path."
 
-    def _generate_random_sequence(self, size = None, low=0, high=100):
-        size = size if size is not None else random.randint(4, 10)
+    def _generate_random_sequence(self, size: Optional[int | Tuple[int,int]] = None, low=0, high=100) -> List[int]:
+        if size is None:
+            size = random.randint(4,10)
+        elif type(size) == tuple:
+            size = random.randint(size[0], size[1])
+
+        assert type(size) == int, "Unreachable."
         return [random.randint(low, high) for _ in range(size)]
 
-    def _generate_random_runs(self, size = None, low=0, high=100, main_memory_size=3, max_seq_len=5):
+    def _generate_random_runs(self, size = None, low=0, high=100, main_memory_size=3, max_seq_len=5) -> List[List[int]]:
         size = size if size is not None else random.randint(4, 10)
-        return [[self._generate_random_sequence(random.randint(main_memory_size, max_seq_len), low, high)] for _ in range(size)]
+        return [self._generate_random_sequence(random.randint(main_memory_size, max_seq_len), low, high) for _ in range(size)]
 
     def get_alg_name(self):
         match (self.algoritmo):
@@ -37,7 +45,9 @@ class Evaluator():
             case 'C': return "Cascade"
             case _: raise Exception("Unreachable.")
 
-    def generate_graph(self, x, y, x_label, y_label, title = None):
+    def generate_graph(self, x, y, x_label, y_label, title = None) -> None:
+        assert self.output_path is not None, "You need to set `self.output_path` to generate a graph."
+
         curr_time_str = datetime.datetime.now().strftime("%d-%m-%Y_%H-%M-%S")
         fpath = os.path.join(self.output_path, f"{self.get_alg_name()}_graph-{curr_time_str}.png")
         title = f"{x_label} x {y_label}" if title is None else title
@@ -49,7 +59,9 @@ class Evaluator():
         plt.savefig(fpath)
         print(f"Done. Saved to `{fpath}`.")
     
-    def run_with_r_sequences(self, r: int, m: int, k: int):
+    def run_with_r_sequences(self, r: int, m: int, k: int) -> float:
+        togglePrint() # Disable printing
+
         if self.algoritmo == "B":
             initial_sequences = self._generate_random_runs(r, main_memory_size=m)
 
@@ -86,9 +98,7 @@ class Evaluator():
             for x in initial_sequences:
                 alg.registers.extend(x[0])
 
-            togglePrint()
             _, alpha, _ = alg.sort(initial_sequences)
-            togglePrint()
 
             return alpha
 
@@ -96,17 +106,24 @@ class Evaluator():
             regs = self._generate_random_sequence(size=r)
             alg = Cascade(
                 registers=regs,
+                main_memory_size=m,
                 max_open_files=k,
-                verbose=False,
+                verbose=True,
             )
 
-        togglePrint() # Disable printing
-        alpha = alg.sort()
-        togglePrint() # Re-enable it
+        try:
+            alpha = alg.sort()
+            togglePrint() # Re-enable printing
+        except Exception as e:
+            # In case of error, rerun the algorithm with
+            # printing enabled while using same cfg
+            # to understand what happened.
+            togglePrint() # Re-enable printing
+            alg.sort()
 
         return alpha
 
-    def test_alpha(self, m: int, k: int, r_lower_limit: int, r_upper_limit: int, save_results: bool = False):
+    def test_alpha(self, m: int, k: int, r_lower_limit: int, r_upper_limit: int, save_results: bool = False) -> List[float]:
         results = []
 
         start_time = time.perf_counter()

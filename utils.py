@@ -1,4 +1,5 @@
 from typing import *
+import random
 from math import inf
 
 def seq_to_notation(seqs: List[List[List[int]]]):
@@ -36,6 +37,35 @@ def beta(main_memory_size: int, num_sequences_actual_phase:int,
         raise ValueError("Depth parameter value is wrong or the type of the generated_sequences_at_actual_phase is not correct.")
     
     return (1/(main_memory_size * num_sequences_actual_phase)) * sum_size_of_generated_sequences
+
+def get_random_num(max_val: int = 100) -> int:
+    return random.randint(0, max_val)
+
+def get_bigger_num(previous_num: int) -> int:
+    return previous_num + random.randint(1, 10)
+
+def get_lower_num(previous_num: int) -> int:
+    return max(1, previous_num - random.randint(1, 10))
+
+def generate_sequences_to_tests(main_memory_size: int, num_sorted_sequences: int, max_value:int = 100) -> List[int]:
+    sequences: List[int] = []
+
+    for _ in range(num_sorted_sequences):
+        current_sequence = []
+        current_sequence.append(get_random_num(max_value))
+        
+        for _ in range(random.randint(0,10)):
+            current_sequence.append(get_bigger_num(current_sequence[-1]))
+        
+        sequences.extend(current_sequence)
+
+        # Add a break between sequences with lower numbers, ensuring no negatives
+        for _ in range(main_memory_size):
+            sequences.append(get_lower_num(sequences[-1]))
+
+
+    return sequences
+
 
 def argmin(arr: List[int]) -> int:
     min = inf

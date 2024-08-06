@@ -1,6 +1,6 @@
 from typing import List, Set, Union
-from heap import Heap
-from utils import beta
+from utils.heap import Heap
+from utils.utils import beta
 import math
 import os
 
@@ -8,8 +8,7 @@ class PWays:
 
     def __init__(self, main_memory_size: int, registers: List[int],
                  num_sorted_sequences: int, max_open_files: int,
-                 save_results: bool = False, print_results: bool = True,
-                 sorted_sequences: Union[None, List[List[int]]] = None) -> None:
+                 save_results: bool = False) -> None:
 
         self._main_memory_size: int = main_memory_size
         self._registers: List[int] = registers
@@ -22,22 +21,17 @@ class PWays:
 
         self._num_output_files: int = math.ceil(max_open_files / 2)
 
-        if sorted_sequences is None:
-            self._r = self._get_sorted_sequences()
+        self._r = self._get_sorted_sequences()
 
         self._result_path = "results"
         self._save: bool = save_results
 
-        self._print_results = print_results
 
-
-    def _get_sorted_sequences(self) -> None:
+    def _get_sorted_sequences(self) -> int:
         heap = Heap(self._main_memory_size, self._registers)
         sorted_sequences = heap.sort()
-        
-        # paliative bug fix
-        test = len(sorted_sequences)
-        for i in range(test):
+
+        for i in range(self._num_sorted_sequences):
             file_index: int = i % self._num_input_files
             self._files[file_index].append(sorted_sequences[i])
             self._index_input_files.add(file_index)
@@ -65,17 +59,17 @@ class PWays:
                         print(register, end=" ")
                     print("}", end=" ")
                 print()
-        if final and self._print_results:
+        if final:
             print(f"final: {alpha:.2f}")
 
     def sort(self):
         phase: int = 0
-        total_write_operations: float = 0
+        total_write_operations: int = 0
         while True:
             if phase == 0:
                 registers_size: int = len(self._registers)
                 # should it be commented?
-                total_write_operations += registers_size
+                #total_write_operations += registers_size
                 beta_value:float = beta(self._main_memory_size, self._num_sorted_sequences, registers_size, depth=0)
             else:
                 num_sequences: int = 0
@@ -89,8 +83,7 @@ class PWays:
                 total_write_operations += sum_size_of_generated_sequences
                 beta_value:float = beta(self._main_memory_size, num_sequences, sum_size_of_generated_sequences, depth=0)
             
-            if self._print_results:
-                self._f_print(phase, beta_value)
+            self._f_print(phase, beta_value)
             phase += 1
 
             if len(self._index_input_files) <= 1 and len(self._files[list(self._index_input_files)[0]]) <= 1:
@@ -138,21 +131,21 @@ class PWays:
         
         #Wrong?!
         alpha: float = total_write_operations / len(self._registers)
-        #print(f"final: {alpha:.2f}")
+        print(f"final: {alpha:.2f}")
 
         # save the results
         if self._save:
             self._save_results(alpha)
 
-        return 
+        return alpha
     
     def _save_results(self, alpha: float) -> None:
         if not os.path.exists(self._result_path):
             os.makedirs(self._result_path)
 
-        path: str = os.path.join(self._result_path, f"test.csv")
+        path: str = os.path.join(self._result_path, f"data_p_ways.txt")
         with open(path, "a") as f:
-            f.write(f"{alpha}, {self._r} \n")
+            f.write(f"{self._r} {alpha}\n")
 
     @staticmethod
     def merge_p_lists(lists_to_merge: List[List[int]]) -> List[int]:

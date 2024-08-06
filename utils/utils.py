@@ -2,6 +2,8 @@ from typing import *
 import random
 from math import inf
 
+import sys, os
+
 def seq_to_notation(seqs: List[List[List[int]]]):
     n_files = len(seqs)
     line = ""
@@ -76,3 +78,12 @@ def argmin(arr: List[int]) -> int:
             min = arr[i]
             idx = i
     return idx
+
+def togglePrint():
+    """
+    Enable/disable printing.
+    """
+    if sys.stdout == sys.__stdout__:
+        sys.stdout = open(os.devnull, 'w')
+    else:
+        sys.stdout = sys.__stdout__

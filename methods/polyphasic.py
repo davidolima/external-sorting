@@ -1,10 +1,13 @@
 #!/usr/bin/env python3
 import heapq
 from math import inf
+import sys
+sys.path.append('..')
+
 from typing import *
 import random
 import matplotlib.pyplot as plt
-from heap import Heap
+from utils.heap import Heap
 
 #from utils import *
 

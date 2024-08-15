@@ -67,24 +67,26 @@ class Evaluator():
 
             alg = PWays(
                 main_memory_size=m,
-                registers=[],
+                num_sorted_sequences=len(initial_sequences),
                 max_open_files=k,
-                num_sorted_sequences=1,
-
+                sorted_sequences=initial_sequences,
+                save_results=False,
+                is_inputing_sorted_sequences=True
             )
-            alg._registers = []
-            alg._files = [[] for _ in range(k)]
-            alg._r = len(initial_sequences)
-            alg._num_sorted_sequences=len(initial_sequences)
 
-            for x in initial_sequences:
-                alg._registers.extend(x[0])
+            #alg._registers = []
+            #alg._files = [[] for _ in range(k)]
+            #alg._r = len(initial_sequences)
+            #alg._num_sorted_sequences=len(initial_sequences)
 
-            for i in range(len(initial_sequences)):
-                file_index: int = i % alg._num_input_files
-                sorted_sequence = sorted(initial_sequences[i])
-                alg._files[file_index].append(sorted_sequence)
-                alg._index_input_files.add(file_index)
+            #for x in initial_sequences:
+                #alg._registers.extend(x[0])
+
+            #for i in range(len(initial_sequences)):
+                #file_index: int = i % alg._num_input_files
+                #sorted_sequence = sorted(initial_sequences[i])
+                #alg._files[file_index].append(sorted_sequence)
+                #alg._index_input_files.add(file_index)
 
         elif self.algoritmo == 'P':
             initial_sequences = self._generate_random_runs(size=r, main_memory_size=m)

@@ -4,32 +4,39 @@ import sys
 sys.path.append('..')
 
 from typing import *
-#from polyphasic import Polyphasic
 from utils.heap import Heap
-from utils.utils import beta
+from utils.utils import beta, argmin
 
 class Cascade:
     def __init__(
         self,
-        registers: List[int],
+        registers: List[int] | List[List[int]],
         max_open_files: int,
         main_memory_size:int,
         verbose: bool = True,
         _debug: bool = False,
     ) -> None:
 
-        self.registers = registers
         self.max_open_files = max_open_files
         self.main_memory_size = main_memory_size # TODO: Move to polyphasic.
         
-        self._files = [[] for _ in range(max_open_files)]
         self.write_ops_per_phase = []
         self._fase = 0
 
         self.verbose = verbose
         self._debug = _debug
 
-        self._distribute_register_in_files()
+        if type(registers[0]) == int:
+            self.registers = registers
+            self._files = [[] for _ in range(max_open_files)]
+            self._distribute_registers_in_files()
+        else:
+            assert all(type(x) == list for x in registers)
+            self.registers = []
+            for R in registers:
+                self.registers.extend(R)
+            self._files = [[] for _ in range(max_open_files)]
+            self._distribute_registers_in_files(sequencias_iniciais=registers)
 
     @staticmethod
     def _calculate_ideal_previous_line(line: List[int]) -> List[int]:
@@ -68,29 +75,35 @@ class Cascade:
             if _debug: print(curr_line)
         return curr_line
 
-    def _distribute_register_in_files(self) -> None:
+    def _distribute_registers_in_files(self, sequencias_iniciais=None) -> None:
+        if sequencias_iniciais is None:
+            sequencias_iniciais = Heap(self.main_memory_size, self.registers).sort()
+
+        if self._debug: print("seqs inicias:", sequencias_iniciais)
+
         tam_inicial_ideal = Cascade._get_ideal_initial_seq_sizes(
-            len(self.registers),
+            len(sequencias_iniciais),
             self.max_open_files,
             _debug = self._debug,
         )
-        tam_inicial_ideal.remove(0)
 
-        registers = self.registers.copy()
         write_ops = 0
+        seq_idx = 0
         file_idx = 0
-        while len(registers) > 0:
-            if len(self._files[file_idx%(len(self._files)-1)]) == tam_inicial_ideal[file_idx%(len(self._files)-1)]:
+        while len(sequencias_iniciais) > 0:
+            if tam_inicial_ideal[file_idx % self.max_open_files] == 0 or len(self._files[file_idx % self.max_open_files]) >= tam_inicial_ideal[file_idx % self.max_open_files]:
                 file_idx += 1
                 continue
+            curr_seq = sequencias_iniciais.pop(0)
+            self._files[file_idx % self.max_open_files].append(curr_seq)
 
-            self._files[file_idx%(len(self._files)-1)].append([registers.pop()])
-
-            write_ops += 1
+            write_ops += len(curr_seq)
+            seq_idx += 1
             file_idx += 1
 
-        for i in range(self.max_open_files-1):
-            # Complete the ideal size with dummy runs.
+        for i in range(self.max_open_files):
+            if tam_inicial_ideal[i] == 0:
+                continue
             n_dummy_runs = tam_inicial_ideal[i] - len(self._files[i])
             self._files[i].extend([[float('inf')] for _ in range(n_dummy_runs)])
 
@@ -124,11 +137,11 @@ class Cascade:
 
         self._fase+=1
 
-    def _calculate_alpha(self):
-        alpha = (sum(self.write_ops_per_phase) / len(self.registers)) if len(self.registers) != 0 else 0
+    def _calculate_alpha(self) -> float:
+        alpha = (sum(self.write_ops_per_phase) / len(self.registers)) if len(self.registers) != 0 else .0
         return alpha
 
-    def get_beta_at_phase(self, phase: int = -1):
+    def get_beta_at_phase(self, phase: int = -1) -> float:
         """
         NOTE: If `phase` is not specified, considers the last phase calculated.
         """
@@ -149,7 +162,7 @@ class Cascade:
             write_ops_at_phase,
         )
 
-    def _calculate_current_beta(self):
+    def _calculate_current_beta(self) -> float:
         return self.get_beta_at_phase(-1)
 
     def merge_files(self, file_idxs: list[int]) -> list[int]:
@@ -174,13 +187,13 @@ class Cascade:
                 sequences.pop(min_element_idx)
         return out
 
-    def sort(self) -> int:
+    def sort(self) -> float:
         """
         Apply the algorithm to the specified registers.
         Returns the average load `alpha`.
         """
         out_idx = self._files.index([])
-        while True:
+        while sum(len(x) for x in self._files) > 1:
             files_to_be_merged = list(range(self.max_open_files))
             files_to_be_merged.pop(out_idx)
             for _ in range(self.max_open_files-2):
@@ -199,16 +212,21 @@ class Cascade:
                 if len(self._files[out_idx][0]) >= len(self.registers):
                     if len(self._files[out_idx][0]) > len(self.registers): # Removes dummy runs
                         self._files[out_idx][0] = self._files[out_idx][0][:len(self.registers)]
+
                     self._print_fase()
                     alpha = self._calculate_alpha()
-                    if self.verbose:
-                        print(f"final {alpha:.2f}")
+                    if self.verbose: print(f"final {alpha:.2f}")
+
                     return alpha
                 
                 out_idx = self._files.index([])
                 files_to_be_merged.remove(out_idx)
             self._print_fase()
-        
+
+        alpha = self._calculate_alpha()
+        if self.verbose: print(f"final {alpha:.2f}")
+        return alpha
+
 if __name__ == "__main__":
     import random
     import argparse
@@ -233,7 +251,7 @@ if __name__ == "__main__":
         max_open_files       = int(args.max_open_files),
         main_memory_size     = int(args.main_memory_size),
         verbose              = True,
-        _debug                = bool(args.debug),
+        _debug               = bool(args.debug),
     )
 
     result = cascade.sort()

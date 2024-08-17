@@ -61,9 +61,9 @@ class Polyphasic:
     #     print(f"final {alpha:.2f}")
     #     return seqs, betas, alpha
 
-    def polyphase_merge_sort(self,data):
+    def polyphase_merge_sort(self,data, verbose=False):
         initial_runs = data
-        print(f"Initial runs: {initial_runs}")
+        if verbose: print(f"Initial runs: {initial_runs}")
         k = self.max_open_files
         runs = [initial_runs]
         total_write_ops = 0
@@ -80,7 +80,7 @@ class Polyphasic:
                 new_run.append(merge_runs)
                 total_write_ops += len(merge_runs)
             runs.append(new_run)
-            print(runs)
+            if verbose: print(runs)
 
         alpha = total_write_ops / total_records if total_records != 0 else 0
         return runs, alpha
@@ -98,17 +98,19 @@ class Polyphasic:
             betas.append(beta)
         return betas
 
-    def sort(self):
-        heap = Heap(self.main_memory_size, self.registers)
-        data = heap.sort()
-        runs, alpha = self.polyphase_merge_sort(data)
+    def sort(self, data=None, verbose=True):
+        if data is None:
+            heap = Heap(self.main_memory_size, self.registers)
+            data = heap.sort()
+        runs, alpha = self.polyphase_merge_sort(data, verbose=verbose)
         betas = self.calculate_beta(runs, self.main_memory_size)
-        for c in range(len(runs)):
-            print(f'Fase {c} {betas[c]:.2f}:')
-            for l in range(len(runs[c])):
-                print(f'{l + 1}: {{{" ".join(map(str, runs[c][l]))}}}')
+        if verbose:
+            for c in range(len(runs)):
+                print(f'Fase {c} {betas[c]:.2f}:')
+                for l in range(len(runs[c])):
+                    print(f'{l + 1}: {{{" ".join(map(str, runs[c][l]))}}}')
 
-        print(f'Final {alpha}')
+            print(f'Final {alpha}')
         return runs, alpha, betas
 
     @staticmethod
@@ -158,13 +160,10 @@ class Polyphasic:
 if __name__ == "__main__":
     import random
 
-    # init_seqs = [
-    #     [1,5,6,7,8],
-    #     [1,3,4,7],
-    #     [2,3,4,9,10]
-    # ]
+    #init_seqs = []
 
-    init_seqs = [random.randint(1, 100) for _ in range(14)]
+
+    init_seqs = [random.randint(1, 100) for _ in range(50)]
 
     # [x.sort() for x in init_seqs]
     # print(f"Sequências iniciais ({len(init_seqs)}):")

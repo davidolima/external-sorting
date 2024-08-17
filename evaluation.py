@@ -18,14 +18,15 @@ import matplotlib.pyplot as plt
 
 class Evaluator():
     def __init__(self, algoritmo, output_path: Optional[str] = None) -> None:
-        self.algoritmo = algoritmo
+        self.algoritmo = algoritmo.upper()
         assert self.algoritmo in ("B","P","C"), f"Algoritmo não reconhecido: `{self.algoritmo}`"
         print(f"Running with {self.get_alg_name()} sort.")
 
         self.output_path = output_path
         assert os.path.isdir(self.output_path), "Please select a directory as an output path."
 
-    def _generate_random_sequence(self, size: Optional[int | Tuple[int,int]] = None, low=0, high=100) -> List[int]:
+    @staticmethod
+    def _generate_random_sequence(size: Optional[int | Tuple[int,int]] = None, low=0, high=100) -> List[int]:
         if size is None:
             size = random.randint(4,10)
         elif type(size) == tuple:
@@ -34,9 +35,16 @@ class Evaluator():
         assert type(size) == int, "Unreachable."
         return [random.randint(low, high) for _ in range(size)]
 
-    def _generate_random_runs(self, size = None, low=0, high=100, main_memory_size=3, max_seq_len=5) -> List[List[int]]:
+    @staticmethod
+    def _generate_ordered_runs(size = None, low=0, high=100, main_memory_size=3, max_seq_len=5):
+        runs = Evaluator._generate_random_runs(size, low,  high, main_memory_size, max_seq_len)
+        [x.sort() for x in runs]
+        return runs
+
+    @staticmethod
+    def _generate_random_runs(size = None, low=0, high=100, main_memory_size=3, max_seq_len=5) -> List[List[int]]:
         size = size if size is not None else random.randint(4, 10)
-        return [self._generate_random_sequence(random.randint(main_memory_size, max_seq_len), low, high) for _ in range(size)]
+        return [Evaluator._generate_random_sequence(random.randint(main_memory_size, max_seq_len), low, high) for _ in range(size)]
 
     def get_alg_name(self):
         match (self.algoritmo):
@@ -78,7 +86,7 @@ class Evaluator():
             alg._num_sorted_sequences=len(initial_sequences)
 
             for x in initial_sequences:
-                alg._registers.extend(x[0])
+                alg._registers.extend(x)
 
             for i in range(len(initial_sequences)):
                 file_index: int = i % alg._num_input_files
@@ -87,25 +95,24 @@ class Evaluator():
                 alg._index_input_files.add(file_index)
 
         elif self.algoritmo == 'P':
-            initial_sequences = self._generate_random_runs(size=r, main_memory_size=m)
+            initial_sequences = Evaluator._generate_ordered_runs(size=r, main_memory_size=m)
+
             alg = Polyphasic(
                 registers=[],
                 main_memory_size=m,
                 num_sorted_sequences=r,
                 max_open_files=k,
             )
-            alg.registers = []
-            for x in initial_sequences:
-                alg.registers.extend(x[0])
 
-            _, alpha, _ = alg.sort(initial_sequences)
+            _, alpha, _ = alg.sort(data=initial_sequences, verbose=False)
+            togglePrint() # Re-enable printing
 
             return alpha
 
         else:
-            regs = self._generate_random_sequence(size=r)
+            seqs = Evaluator._generate_random_runs(size=r)
             alg = Cascade(
-                registers=regs,
+                registers=seqs,
                 main_memory_size=m,
                 max_open_files=k,
                 verbose=True,

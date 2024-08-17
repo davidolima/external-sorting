@@ -60,9 +60,9 @@ class Polyphasic:
     #     print(f"final {alpha:.2f}")
     #     return seqs, betas, alpha
 
-    def polyphase_merge_sort(self,data):
+    def polyphase_merge_sort(self,data, verbose=False):
         initial_runs = data
-        print(f"Initial runs: {initial_runs}")
+        if verbose: print(f"Initial runs: {initial_runs}")
         k = self.max_open_files
         runs = [initial_runs]
 
@@ -76,7 +76,7 @@ class Polyphasic:
                 merge_runs.sort()
                 new_run.append(merge_runs)
             runs.append(new_run)
-            print(runs)
+            if verbose: print(runs)
 
         return runs
 
@@ -94,18 +94,20 @@ class Polyphasic:
             betas.append(beta)
         return betas
 
-    def sort(self):
-        heap = Heap(self.main_memory_size, self.registers)
-        data = heap.sort()
-        runs = self.polyphase_merge_sort(data)
+    def sort(self, data=None, verbose=True):
+        if data is None:
+            heap = Heap(self.main_memory_size, self.registers)
+            data = heap.sort()
+        runs = self.polyphase_merge_sort(data, verbose=verbose)
         alpha = self.calculate_alpha(runs)
         betas = self.calculate_beta(runs, self.main_memory_size)
-        for c in range(len(runs)):
-            print(f'Fase {c} {betas[c]:.2f}:')
-            for l in range(len(runs[c])):
-                print(f'{l + 1}: {{{" ".join(map(str, runs[c][l]))}}}')
+        if verbose:
+            for c in range(len(runs)):
+                print(f'Fase {c} {betas[c]:.2f}:')
+                for l in range(len(runs[c])):
+                    print(f'{l + 1}: {{{" ".join(map(str, runs[c][l]))}}}')
 
-        print(f'Final {alpha}')
+            print(f'Final {alpha}')
         return runs, alpha, betas
 
     @staticmethod

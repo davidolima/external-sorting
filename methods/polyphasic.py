@@ -23,6 +23,7 @@ class Polyphasic:
         self.main_memory_size = main_memory_size
         self.num_sorted_size = num_sorted_sequences
         self.registers = registers
+        self.write_ops_per_phase = []
 
 
 
@@ -65,6 +66,8 @@ class Polyphasic:
         print(f"Initial runs: {initial_runs}")
         k = self.max_open_files
         runs = [initial_runs]
+        total_write_ops = 0
+        total_records = sum(len(run) for run in initial_runs)
 
         while len(runs[-1]) > 1:
             new_run = []
@@ -75,15 +78,16 @@ class Polyphasic:
                         merge_runs.extend(runs[-1][i + j])
                 merge_runs.sort()
                 new_run.append(merge_runs)
+                total_write_ops += len(merge_runs)
             runs.append(new_run)
             print(runs)
 
-        return runs
+        alpha = total_write_ops / total_records if total_records != 0 else 0
+        return runs, alpha
 
     def calculate_alpha(self,runs):
-        total_writes = sum(len(run) for run in runs[-1])
-        total_records = sum(len(run) for run in runs[0])
-        return total_writes / total_records
+        alpha = (sum(self.write_ops_per_phase) / len(self.registers)) if len(self.registers) != 0 else 0
+        return alpha
 
     def calculate_beta(self,runs, memory_size):
         betas = []
@@ -97,8 +101,7 @@ class Polyphasic:
     def sort(self):
         heap = Heap(self.main_memory_size, self.registers)
         data = heap.sort()
-        runs = self.polyphase_merge_sort(data)
-        alpha = self.calculate_alpha(runs)
+        runs, alpha = self.polyphase_merge_sort(data)
         betas = self.calculate_beta(runs, self.main_memory_size)
         for c in range(len(runs)):
             print(f'Fase {c} {betas[c]:.2f}:')

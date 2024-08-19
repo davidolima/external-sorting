@@ -14,6 +14,8 @@ import random
 import time, datetime
 from typing import *
 
+from tqdm import tqdm
+
 import matplotlib.pyplot as plt
 
 class Evaluator():
@@ -53,17 +55,21 @@ class Evaluator():
             case 'C': return "Cascade"
             case _: raise Exception("Unreachable.")
 
-    def generate_graph(self, x, y, x_label, y_label, title = None) -> None:
+    def generate_graph(self, x, y, x_label, y_label, title = None, fpath = None, legend = None) -> None:
         assert self.output_path is not None, "You need to set `self.output_path` to generate a graph."
 
-        curr_time_str = datetime.datetime.now().strftime("%d-%m-%Y_%H-%M-%S")
-        fpath = os.path.join(self.output_path, f"{self.get_alg_name()}_graph-{curr_time_str}.png")
+        if fpath is None:
+            curr_time_str = datetime.datetime.now().strftime("%d-%m-%Y_%H-%M-%S")
+            fpath = os.path.join(self.output_path, f"{self.get_alg_name()}_graph-{curr_time_str}.png")
+
         title = f"{x_label} x {y_label}" if title is None else title
         print("[!] Generating graph...", end=' ')
         plt.plot(x, y)
         plt.xlabel(x_label)
         plt.ylabel(y_label)
         plt.title(title)
+        if legend is not None:
+            plt.legend(legend)
         plt.savefig(fpath)
         print(f"Done. Saved to `{fpath}`.")
     
@@ -103,7 +109,7 @@ class Evaluator():
 
             return alpha
 
-        else:
+        else: # Cascade
             seqs = Evaluator._generate_random_runs(size=r)
             alg = Cascade(
                 registers=seqs,
@@ -128,7 +134,7 @@ class Evaluator():
         results = []
 
         start_time = time.perf_counter()
-        for i in range(r_lower_limit, r_upper_limit):
+        for i in tqdm(range(r_lower_limit, r_upper_limit)):
             result = self.run_with_r_sequences(r=i, m=m, k=k)
             results.append(result)
         end_time = time.perf_counter()
@@ -138,7 +144,7 @@ class Evaluator():
         if save_results:
             assert self.output_path is not None, "You need to define an output dir to be able to save the results."
             if os.path.isdir(self.output_path):
-                fpath = os.path.join(self.output_path, f"alpha_test_{self.get_alg_name()}.csv")
+                fpath = os.path.join(self.output_path, f"alpha_test_{self.get_alg_name()}_m{m}_k{k}_ru{r_upper_limit}.csv")
             else:
                 fpath = self.output_path
 
@@ -151,7 +157,51 @@ class Evaluator():
 
         return results
 
+    def test_k(
+        self,
+        m: int,
+        k_lower_limit:int,
+        k_upper_limit:int,
+        r_lower_limit:int,
+        r_upper_limit: int,
+        save_results: bool = False,
+        generate_graph: bool = True
+    ) -> List[float]:
+        start_time = time.perf_counter()
+        interval = list(range(k_lower_limit, k_upper_limit+1))
+        for i in tqdm(interval):
+            alphas = self.test_alpha(m=m, k=i, r_lower_limit=r_lower_limit, r_upper_limit=r_upper_limit, save_results = False)
 
+            if save_results:
+                assert self.output_path is not None, "You need to define an output dir to be able to save the results."
+                print("[!] Saving results...", end=' ')
+                fpath  = os.path.join(self.output_path, f"m_test_{self.get_alg_name()}_m{m}_k{i}_ru{r_upper_limit}")
+
+                with open(fpath + ".csv", 'w+') as f:
+                    for i in range(len(alphas)):
+                        f.write(f"{i}, {alphas[i]:.2f}\n")
+
+                print(f"Results of k={i} saved to `{fpath}.csv`.", end=' ')
+                print()
+
+            if generate_graph:
+                plt.style.use('ggplot')
+                evaluator.generate_graph(
+                    x = list(range(int(args.r_lower_limit),int(args.r_upper_limit))),
+                    y = alphas,
+                    x_label = r"Nº Sequencias iniciais ($r$)",
+                    y_label = r"Taxa de processamento ($\alpha$)",
+                    title=f"m={m}",
+                    fpath=fpath + '.png',
+                    legend=[f"k={x}" for x in interval],
+                )
+
+
+        end_time = time.perf_counter()
+        print(f"[!] Ran {k_upper_limit - k_lower_limit} tests in {end_time - start_time} seconds.")
+
+
+        return alphas
 
 if __name__ == "__main__":
     import argparse
@@ -159,7 +209,8 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("-a", "--algoritmo",        type=str, default='C')
     parser.add_argument("-m", "--main-memory-size", type=int, default=3)
-    parser.add_argument("-k", "--max-open-files",   type=int, default=4)
+    parser.add_argument("-kl", "--k-lower-limit",   type=int, default=3)
+    parser.add_argument("-ku", "--k-upper-limit",   type=int, default=6)
     parser.add_argument("-rl", "--r-lower-limit",   type=int, default=3)
     parser.add_argument("-ru", "--r-upper-limit",   type=int, default=100)
     parser.add_argument("-o", "--output",           type=str, default="results/")
@@ -170,19 +221,12 @@ if __name__ == "__main__":
         output_path=args.output
     )
 
-    alphas = evaluator.test_alpha(
+    evaluator.test_k(
         m=args.main_memory_size,
-        k=args.max_open_files,
+        k_lower_limit=args.k_lower_limit,
+        k_upper_limit=args.k_upper_limit,
         r_lower_limit=args.r_lower_limit,
         r_upper_limit=args.r_upper_limit,
-        save_results=True
-    )
-
-    plt.style.use('ggplot')
-    evaluator.generate_graph(
-        x = list(range(int(args.r_lower_limit),int(args.r_upper_limit))),
-        y = alphas,
-        x_label = r"Nº Sequencias iniciais ($r$)",
-        y_label = r"Taxa de processamento ($\alpha$)",
-        title=f"m={args.main_memory_size} k={args.max_open_files}"
+        save_results=True,
+        generate_graph=True
     )

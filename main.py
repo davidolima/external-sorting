@@ -22,6 +22,7 @@ if __name__ == "__main__":
                 registers=registers,
                 max_open_files=k,
                 num_sorted_sequences=r,
+                is_inputing_sorted_sequences=False
             )
         case 'P':
             algoritmo = Polyphasic(

@@ -19,7 +19,7 @@ from tqdm import tqdm
 import matplotlib.pyplot as plt
 
 class Evaluator():
-    def __init__(self, algoritmo, output_path: Optional[str] = None) -> None:
+    def __init__(self, algoritmo: Literal["B", "P", "C"], output_path: Optional[str] = None) -> None:
         self.algoritmo = algoritmo.upper()
         assert self.algoritmo in ("B","P","C"), f"Algoritmo não reconhecido: `{self.algoritmo}`"
         print(f"Running with {self.get_alg_name()} sort.")
@@ -203,25 +203,55 @@ class Evaluator():
 
         return alphas
 
+    def test_k_for_all(
+        self,
+        m: int,
+        k_lower_limit: int,
+        k_upper_limit: int,
+        r_lower_limit: int,
+        r_upper_limit: int,
+        algorithms: Tuple[Literal["B"], Literal["P"], Literal["C"]] = ("A", "B", "C"),
+        save_results: bool = True,
+        generate_graph: bool = True,
+    ):
+        for alg in algorithms:
+            self.algoritmo = alg
+            self.test_k(
+                m=m,
+                k_lower_limit=k_lower_limit,
+                k_upper_limit=k_upper_limit,
+                r_lower_limit=r_lower_limit,
+                r_upper_limit=r_upper_limit,
+                save_results=save_results,
+                generate_graph=generate_graph
+            )
+
+    
 if __name__ == "__main__":
     import argparse
 
     parser = argparse.ArgumentParser()
-    parser.add_argument("-a", "--algoritmo",        type=str, default='C')
-    parser.add_argument("-m", "--main-memory-size", type=int, default=3)
-    parser.add_argument("-kl", "--k-lower-limit",   type=int, default=3)
-    parser.add_argument("-ku", "--k-upper-limit",   type=int, default=6)
-    parser.add_argument("-rl", "--r-lower-limit",   type=int, default=3)
-    parser.add_argument("-ru", "--r-upper-limit",   type=int, default=100)
-    parser.add_argument("-o", "--output",           type=str, default="results/")
+    parser.add_argument("-a", "--algorithms",        type=str, default='C')
+    parser.add_argument("-m", "--main-memory-size",  type=int, default=3)
+    parser.add_argument("-kl", "--k-lower-limit",    type=int, default=3)
+    parser.add_argument("-ku", "--k-upper-limit",    type=int, default=6)
+    parser.add_argument("-rl", "--r-lower-limit",    type=int, default=3)
+    parser.add_argument("-ru", "--r-upper-limit",    type=int, default=100)
+    parser.add_argument("-o", "--output",            type=str, default="results/")
     args = parser.parse_args()
 
     evaluator = Evaluator(
-        algoritmo=args.algoritmo,
+        algoritmo=args.algorithms,
         output_path=args.output
     )
 
-    evaluator.test_k(
+    if args.algorithms == '*':
+        algoritmos = ["B", "P", "C"]
+    else:
+        algoritmos = args.algorithms
+
+    evaluator.test_k_for_all(
+        algorithms=("P", "C"),
         m=args.main_memory_size,
         k_lower_limit=args.k_lower_limit,
         k_upper_limit=args.k_upper_limit,

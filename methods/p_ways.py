@@ -39,7 +39,7 @@ class PWays:
         self._result_path = "results"
         self._save: bool = save_results
 
-    def _get_num_registers(self, registers: List[int]) -> int:
+    def _get_num_registers(self, sorted_sequences: List[List[int]]) -> int:
         # this function returns the number of registers in the heap result if it is passed instead of the registers list
         num_registers = 0
         for sequence in sorted_sequences:

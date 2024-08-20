@@ -3,7 +3,7 @@
 from logging import debug
 from matplotlib.font_manager import generate_fontconfig_pattern
 from utils.heap import Heap
-from utils.utils import togglePrint
+from utils.utils import togglePrint, beta
 
 from methods.p_ways import PWays
 from methods.cascade import Cascade
@@ -110,7 +110,7 @@ class Evaluator():
             return alpha
 
         else: # Cascade
-            seqs = Evaluator._generate_random_runs(size=r)
+            seqs = Evaluator._generate_ordered_runs(size=r)
             alg = Cascade(
                 registers=seqs,
                 main_memory_size=m,
@@ -185,6 +185,8 @@ class Evaluator():
                 print()
 
             if generate_graph:
+                assert self.output_path is not None, "You need to define an output dir to be able to save the results."
+                fpath  = os.path.join(self.output_path, f"m_test_{self.get_alg_name()}_m{m}_k{i}_ru{r_upper_limit}")
                 plt.style.use('ggplot')
                 evaluator.generate_graph(
                     x = list(range(int(args.r_lower_limit),int(args.r_upper_limit))),
@@ -210,7 +212,7 @@ class Evaluator():
         k_upper_limit: int,
         r_lower_limit: int,
         r_upper_limit: int,
-        algorithms: Tuple[Literal["B"], Literal["P"], Literal["C"]] = ("A", "B", "C"),
+        algorithms: Tuple[Literal["B"], Literal["P"], Literal["C"]] = ("B", "P", "C"),
         save_results: bool = True,
         generate_graph: bool = True,
     ):
@@ -226,7 +228,53 @@ class Evaluator():
                 generate_graph=generate_graph
             )
 
-    
+    def test_beta(
+            self,
+            m_lower_limit: int,
+            m_upper_limit: int,
+            N_OF_REGS: int = 5000,
+            save_results: bool = False,
+            generate_graph: bool = False,
+    ) -> None:
+        betas = []
+        interval = list(range(m_lower_limit, m_upper_limit+1))
+        for m in tqdm(interval):
+            regs = Evaluator._generate_random_sequence(N_OF_REGS)
+            sorted_seqs = Heap(
+                main_memory_size=m,
+                registers=regs
+            ).sort()
+
+            betas.append(
+                beta(m, len(sorted_seqs), N_OF_REGS, depth=0)
+            )
+
+        if save_results:
+            assert self.output_path is not None, "You need to define an output dir to be able to save the results."
+            print("[!] Saving results...", end=' ')
+            fpath  = os.path.join(self.output_path, f"beta_test_m{m}")
+
+            with open(fpath + ".csv", 'w+') as f:
+                for i in range(len(betas)):
+                    f.write(f"{i}, {betas[i]:.2f}\n")
+
+            print(f"Results of k={i} saved to `{fpath}.csv`.", end=' ')
+        print()
+
+        if generate_graph:
+            assert self.output_path is not None, "You need to define an output dir to be able to save the results."
+            fpath  = os.path.join(self.output_path, f"beta_test_m{m}")
+            plt.style.use('ggplot')
+            evaluator.generate_graph(
+                x = interval,
+                y = betas,
+                x_label = r"Tam. da memória principal ($m$)",
+                y_label = r"$\beta$",
+                fpath=fpath + '.png',
+                legend=[f"m={x}" for x in interval],
+            )
+
+
 if __name__ == "__main__":
     import argparse
 
@@ -245,18 +293,20 @@ if __name__ == "__main__":
         output_path=args.output
     )
 
-    if args.algorithms == '*':
-        algoritmos = ["B", "P", "C"]
-    else:
-        algoritmos = args.algorithms
+    # evaluator.test_k_for_all(
+    #     algorithms=("B", "P", "C"),
+    #     m=args.main_memory_size,
+    #     k_lower_limit=args.k_lower_limit,
+    #     k_upper_limit=args.k_upper_limit,
+    #     r_lower_limit=args.r_lower_limit,
+    #     r_upper_limit=args.r_upper_limit,
+    #     save_results=True,
+    #     generate_graph=True
+    # )
 
-    evaluator.test_k_for_all(
-        algorithms=("P", "C"),
-        m=args.main_memory_size,
-        k_lower_limit=args.k_lower_limit,
-        k_upper_limit=args.k_upper_limit,
-        r_lower_limit=args.r_lower_limit,
-        r_upper_limit=args.r_upper_limit,
+    evaluator.test_beta(
+        m_lower_limit=3,
+        m_upper_limit=3000,
         save_results=True,
         generate_graph=True
     )

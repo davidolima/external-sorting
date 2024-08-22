@@ -76,10 +76,10 @@ class PWays:
             if file:
                 print(f"{index + 1}:", end=" ")
                 for sequence in file:
-                    print("{", end=" ")
-                    for register in sequence:
-                        print(register, end=" ")
-                    print("}", end=" ")
+                    print("{", end="")
+                    for i in range(len(sequence)):
+                        print(sequence[i], end=" " if i != len(sequence)-1 else "")
+                    print("}", end="")
                 print()
         if final:
             print(f"final: {alpha:.2f}")

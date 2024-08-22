@@ -1,6 +1,5 @@
 from typing import List, Union
 
-
 class Node:
     def __init__(self, value: int) -> None:
         self._value: int = value
@@ -42,6 +41,13 @@ class Node:
         else:
             return self._value >= other._value
 
+    def __lt__(self, other: 'Node') -> bool:
+        if self._is_marked and not other._is_marked:
+            return False
+        elif not self._is_marked and other._is_marked:
+            return True
+        else:
+            return self._value < other._value
 
 class Heap:
     def __init__(self, main_memory_size: int, registers: List[int]) -> None:
@@ -81,10 +87,6 @@ class Heap:
             self._swap(i, smallest)
             self._min_heapify(smallest)
 
-    """def _build_min_heap(self) -> None:
-        for i in range(self._heap_size // 2, -1, -1):
-            self._min_heapify(i)"""
-
     def _extract_min(self) -> Node:
         if self._heap_size < 1:
             raise ValueError("Heap underflow")
@@ -92,7 +94,7 @@ class Heap:
         self._last_min_node = min_node
 
         self._heap[0] = self._heap[self._heap_size - 1]
-        self._heap.remove(self._heap[self._heap_size - 1])
+        self._heap.pop()
 
         self._heap_size -= 1
         self._min_heapify(0)
@@ -106,21 +108,15 @@ class Heap:
         if self._last_min_node is not None and node < self._last_min_node:
             node.mark()
 
-        self._registers.pop(0)
         self._heap.append(node)
-
         i: int = self._heap_size - 1
         while i > 0 and self._heap[self._parent(i)] > self._heap[i]:
             self._swap(i, self._parent(i))
             i = self._parent(i)
 
     def _fill_heap(self) -> None:
-        if self._main_memory_size <= len(self._registers):
-            for i in range(self._main_memory_size):
-                self._insert(Node(self._registers[0]))
-        else:
-            for i in range(len(self._registers)):
-                self._insert(Node(self._registers[0]))
+        for _ in range(min(self._main_memory_size, len(self._registers))):
+            self._insert(Node(self._registers.pop(0)))
 
     def _check_marked_nodes(self) -> None:
         if all([node.is_marked for node in self._heap]):
@@ -141,15 +137,6 @@ class Heap:
             self._sorted_sequences[self._i_sorted_sequence].append(min_node.value)
 
             if len(self._registers) > 0:
-                self._insert(Node(self._registers[0]))
+                self._insert(Node(self._registers.pop(0)))
 
         return self._sorted_sequences
-
-
-if __name__ == "__main__":
-    # test
-    registers: List[int] = [18, 7, 3, 24, 15, 5, 20, 25, 16, 14, 21, 19, 1, 4, 13, 9, 22, 11, 23, 8, 17, 6, 12, 2, 10]
-    main_memory_size: int = 3
-    heap = Heap(main_memory_size, registers)
-    sorted_sequences = heap.sort()
-    print(sorted_sequences)

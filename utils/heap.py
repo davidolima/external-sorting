@@ -140,3 +140,12 @@ class Heap:
                 self._insert(Node(self._registers.pop(0)))
 
         return self._sorted_sequences
+
+if __name__ == "__main__":
+    import random
+    sorted_seqs = Heap(
+        main_memory_size=10,
+        registers=[random.randint(0,100) for _ in range(10_000)],
+    ).sort()
+
+    print(sorted_seqs)

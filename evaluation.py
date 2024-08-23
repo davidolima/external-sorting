@@ -282,7 +282,6 @@ class Evaluator():
                 y_label = r"$\beta$",
                 y_lim   = (0, 4),
                 fpath   = fpath + '.png',
-                legend  = [f"m={x}" for x in m_values],
             )
 
             fpath  = os.path.join(self.output_path, f"beta_test_m{m}" if not fixed_seq else f"beta_test_m{m}_n_seqs_fixed")
@@ -293,7 +292,6 @@ class Evaluator():
                 x_label = r"Tam. da memória principal ($m$)",
                 y_label = r"Qtd. Sequências",
                 fpath   = fpath + '.png',
-                legend  = [f"m={x}" for x in m_values],
             )
 
             fpath  = os.path.join(self.output_path, f"beta_test_m{m}" if not fixed_seq else f"beta_test_m{m}_avg_seq_size_fixed")
@@ -304,7 +302,6 @@ class Evaluator():
                 x_label = r"Tam. da memória principal ($m$)",
                 y_label = r"Tam. médio das Sequências",
                 fpath   = fpath + '.png',
-                legend  = [f"m={x}" for x in m_values],
             )
 
 

@@ -63,7 +63,7 @@ class Polyphasic:
 
     def polyphase_merge_sort(self,data, verbose=False):
         initial_runs = data
-        if verbose: print(f"Initial runs: {initial_runs}")
+        #if verbose: print(f"Initial runs: {initial_runs}")
         k = self.max_open_files
         runs = [initial_runs]
         total_write_ops = 0
@@ -80,7 +80,7 @@ class Polyphasic:
                 new_run.append(merge_runs)
                 total_write_ops += len(merge_runs)
             runs.append(new_run)
-            if verbose: print(runs)
+            #if verbose: print(runs)
 
         alpha = total_write_ops / total_records if total_records != 0 else 0
         return runs, alpha
@@ -106,7 +106,7 @@ class Polyphasic:
         betas = self.calculate_beta(runs, self.main_memory_size)
         if verbose:
             for c in range(len(runs)):
-                print(f'Fase {c} {betas[c]:.2f}:')
+                print(f'fase {c} {betas[c]:.2f}')
                 for l in range(len(runs[c])):
                     print(f'{l + 1}: {{{" ".join(map(str, runs[c][l]))}}}')
 

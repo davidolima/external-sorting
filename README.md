@@ -15,6 +15,9 @@ python3 main.py
 
 ## Results
 ### Heap
- ![Heap](results/beta_test_m60_fixed.png)
+![Heap](results/beta_test_m60_fixed.png)
+ 
 ### Algorithms
- | ![P_Ways](results/m_test_PWays_m3_k350.png) | ![Polyphasic](results/m_test_Polyphasic_m3_k350.png) | ![Cascade](results/m_test_Cascade_m3_k350.png) |
+![P_Ways](results/m_test_PWays_m3_k350.png)
+![Polyphasic](results/m_test_Polyphasic_m3_k350.png)
+![Cascade](results/m_test_Cascade_m3_k350.png)

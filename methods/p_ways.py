@@ -82,7 +82,7 @@ class PWays:
                     print("}", end="")
                 print()
         if final:
-            print(f"final: {alpha:.2f}")
+            print(f"final {alpha:.2f}")
 
     def sort(self) -> float:
         phase: int = 0

@@ -143,8 +143,12 @@ class Evaluator():
 
         start_time = time.perf_counter()
         for i in tqdm(r_values):
-            result = self.run_with_r_sequences(r=i, m=m, k=k)
-            results.append(result)
+            values = []
+            for _ in range(10):
+                result = self.run_with_r_sequences(r=i, m=m, k=k)
+                values.append(result)
+            results.append(sum(values)/len(values))
+
         end_time = time.perf_counter()
 
         print(f"[!] Ran {len(r_values)} tests in {end_time - start_time} seconds.")
@@ -159,7 +163,7 @@ class Evaluator():
             print("[!] Saving results...", end=' ')
             with open(fpath, 'w+') as f:
                 for i in r_values:
-                    f.write(f"{i}, {results[i]:.2f}\n")
+                    f.write(f"{r_values[i]}, {results[i]}\n")
 
             print(f"Done. Results saved to `{fpath}`.")
 
@@ -184,7 +188,7 @@ class Evaluator():
 
                 with open(fpath + ".csv", 'w+') as f:
                     for i in range(len(alphas)):
-                        f.write(f"{i}, {alphas[i]:.2f}\n")
+                        f.write(f"{r_values[i]}, {alphas[i]}\n")
 
                 print(f"Results of k={i} saved to `{fpath}.csv`.", end=' ')
                 print()
@@ -199,6 +203,7 @@ class Evaluator():
                     x_label = r"Nº Sequencias iniciais ($r$)",
                     y_label = r"Taxa de processamento ($\alpha$)",
                     title=self.get_alg_name(),
+                    y_lim=(0,14),
                     fpath=fpath + '.png',
                     legend=[f"k={x}" for x in k_values],
                 )
@@ -265,7 +270,7 @@ class Evaluator():
 
             with open(fpath + ".csv", 'w+') as f:
                 for i in range(len(betas)):
-                    f.write(f"{m_values[i]}, {betas[i]:.2f}\n")
+                    f.write(f"{m_values[i]}, {betas[i]}\n")
 
             print(f"Results of k={i} saved to `{fpath}.csv`.", end=' ')
         print()

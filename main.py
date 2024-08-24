@@ -22,12 +22,15 @@ if __name__ == "__main__":
     # if the heap result returns more sorted sequences than expected, get the valid registers
     heap = Heap(main_memory_size=m, registers=registers)
     sorted_sequences: List[List[int]] = heap.sort()
-    if len(sorted_sequences) != r:
+    if len(sorted_sequences) > r:
         registers:List[int] = get_valid_registers(sorted_sequences, r)
 
     if len(registers) == 0:
         registers = [random.randint(0,100) for _ in range(n)]
 
+    if len(sorted_sequences) < r:
+        print(f"[!] Warning: Heap returned only {len(sorted_sequences)} ordered sequences when r={r} was provided. In ordered to not crash, r is now {len(sorted_sequences)}.")
+        r = len(sorted_sequences)
     sorting_algorithm = None
 
     match(method):

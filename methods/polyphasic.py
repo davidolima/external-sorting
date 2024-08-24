@@ -110,7 +110,7 @@ class Polyphasic:
                 for l in range(len(runs[c])):
                     print(f'{l + 1}: {{{" ".join(map(str, runs[c][l]))}}}')
 
-            print(f'final {alpha}')
+            print(f'final {alpha:.2f}')
         return runs, alpha, betas
 
     @staticmethod

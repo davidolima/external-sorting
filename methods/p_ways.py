@@ -21,10 +21,10 @@ class PWays:
         self._max_open_files: int = max_open_files
         self._files: List[List[List[int]]] = [[] for _ in range(max_open_files)]
 
-        self._num_input_files: int = math.floor(max_open_files / 2)
+        self._num_input_files: int = math.ceil(max_open_files / 2)
         self._index_input_files: Set[int] = set()
 
-        self._num_output_files: int = math.ceil(max_open_files / 2)
+        self._num_output_files: int = math.floor(max_open_files / 2)
 
         # this class can receive the registers list or the heap result (sorted sequences)
         if is_inputing_sorted_sequences:
@@ -70,7 +70,7 @@ class PWays:
             self._files[file_index].append(sorted_sequences[i])
             self._index_input_files.add(file_index)
 
-    def _f_print(self, phase: int, beta_value: float, final:bool = False, alpha: Union[None, float] = None) -> None:
+    def _f_print(self, phase: int, beta_value: float) -> None:
         print(f"fase {phase} {beta_value:.2f}")
         for index, file in enumerate(self._files):
             if file:
@@ -81,8 +81,6 @@ class PWays:
                         print(sequence[i], end=" " if i != len(sequence)-1 else "")
                     print("}", end="")
                 print()
-        if final:
-            print(f"final {alpha:.2f}")
 
     def sort(self) -> float:
         phase: int = 0
@@ -150,7 +148,7 @@ class PWays:
         
         #Wrong?!
         alpha: float = total_write_operations / self._num_registers
-        print(f"final: {alpha:.2f}")
+        print(f"final {alpha:.2f}")
 
         # save the results
         if self._save:

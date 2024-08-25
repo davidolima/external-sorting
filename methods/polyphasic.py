@@ -110,8 +110,6 @@ class Polyphasic:
                 for l in range(len(runs[c])):
                     if c == len(runs) - 1 and l == len(runs[c]) - 1:
                         print(f'{self.max_open_files + 1}: {{{" ".join(map(str, runs[c][l]))}}}')
-                    elif len(runs[0]) + 1 == self.max_open_files:
-                        print(f'{len(runs[0])}: {{{" ".join(map(str, runs[c][l]))}}}')
                     else:
                         print(f'{l + 1}: {{{" ".join(map(str, runs[c][l]))}}}')
 
